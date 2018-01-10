@@ -11,6 +11,7 @@
 #include <string>
 #include <deque>
 #include <array>
+#include <tuple>
 #include "user.h"
 #include "client.h"
 
@@ -22,6 +23,8 @@ using boost::asio::ip::tcp;
 std::string RESERVED_CHARS[3] = {":", "!", "@"};
 
 std::deque<std::string> sock_msgs;
+
+bool DEBUG = true;
 
 void try_writing_to_sock(tcp::socket& sock, std::string msg)
 {
@@ -72,6 +75,31 @@ std::string try_reading_from_sock(tcp::socket& sock)
 	}
 }
 
+// basically try_read_from_sock without the popping
+// @TODO: loop with read_some to check if len amount is read.
+void update_sock_msgs(tcp::socket& sock)
+{
+	try {
+		std::size_t len = sock.available();
+		if (len <= 0) { // could just put == 0...
+			return;
+		}
+		std::vector<char> buff;
+		boost::system::error_code ec;
+		sock.read_some(boost::asio::buffer(buff), ec);
+		std::string full_msg(buff.begin(), buff.end());
+		std::vector<std::string> msgs;
+
+		boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
+		for (auto it = msgs.begin(); it != msgs.end(); ++it) {
+			if (*it != "")
+				sock_msgs.push_back(*it);
+		}
+	} catch (...) {
+		throw;
+	}
+}
+
 std::string to_cyan(std::string msg)
 {
 	return "\033[1;36m" + msg + "\033[0m";
@@ -107,20 +135,134 @@ void pass_user_into_to_server(User this_user, tcp::socket& serv_sock)
 {
 	try {
 		// send NICK
-		std::string msg = "NICK " + this_user.nick + "\r\n";
+		std::string msg = "NICK " + this_user.get_nick() + "\r\n";
 		try_writing_to_sock(serv_sock, msg);
 		// write to socket
 
 		// send USER; asterisks for ignored fields
-		msg  = "USER " + this_user.user_name + " * * :";
-		msg += this_user.real_name + "\r\n";
+		msg  = "USER " + this_user.get_user() + " * * :";
+		msg += this_user.get_real() + "\r\n";
 		try_writing_to_sock(serv_sock, msg);
 
 		std::string reply = try_reading_from_sock(serv_sock);
+		if (DEBUG)
+			std::cout << reply << std::endl;
 		// @TODO: check if reply has correct reply in it.
 	} catch (...) {
 		throw;
 	}
+}
+
+std::string parse_topic_msg(std::string msg)
+{
+	std::string new_msg = "";
+	std::vector<std::string> parts;
+	boost::algorithm::split(parts, msg, boost::is_any_of(":"));
+	// this is more complicated than it should be for using a maxsplit of 1
+	for (auto it = parts.begin(); it != parts.end(); ++it) {
+		if (it == parts.begin())
+			continue;
+		if (it == --parts.end())
+			new_msg += *it;
+		else
+			new_msg += *it + ":";
+	}
+	return new_msg;
+}
+
+// lazy... but they do the same thing.
+std::string parse_user_list_msg(std::string msg)
+{
+	return parse_topic_msg(msg);
+}
+
+std::string connect_to_channel(tcp::socket& sock)
+{
+	try {
+		std::string msg;
+		msg  = "\n";
+		msg += "##########################\n";
+		msg += "What #channel would you like to join?\n";
+		std::cout << to_cyan(msg);
+
+		std::string channel;
+		std::cin >> channel;
+		if (channel.substr(0, 1) != "#")
+			channel = "#" + channel;
+
+		msg  = "JOIN " + channel + "\r\n";
+		try_writing_to_sock(sock, msg);
+
+		std::string reply = try_reading_from_sock(sock);
+		if (DEBUG)
+			std::cout << reply << std::endl;
+
+		msg  = "\n";
+		msg += "##########################\n";
+		msg += "Successfully connected to " + channel + "\n";
+		std::cout << to_cyan(msg);
+
+		reply = try_reading_from_sock(sock);
+		if (DEBUG)
+			std::cout << reply << std::endl;
+
+		msg  = "\n";
+		msg += "##########################\n";
+		msg += channel + " Topic:\n";
+		msg += parse_topic_msg(reply) + "\n";
+		std::cout << to_cyan(msg);
+
+		reply = try_reading_from_sock(sock);
+		if (DEBUG)
+			std::cout << reply << std::endl;
+
+		msg  = "\n";
+		msg += "##########################\n";
+		msg += channel + " Users:\n";
+		msg += parse_user_list_msg(reply) + "\n";
+		std::cout << to_cyan(msg);
+
+		reply = try_reading_from_sock(sock);
+		if (DEBUG)
+			std::cout << reply << std::endl;
+
+		return channel;
+	} catch (...) {
+		throw;
+	}
+}
+
+std::tuple<std::string, std::string> parse_session_msg(std::string msg)
+{
+	std::tuple<std::string, std::string> retval;
+	if (msg.find("PRIVMSG") != std::string::npos) {
+		// :<nick>!<user>@<user-ip> PRIVMSG <channel> :<msg>
+		std::size_t found = msg.find("!");
+		std::string nick = msg.substr(1, found - 1); // should work...
+		found = msg.find(":", 1);
+		std::string priv_msg = msg.substr(found + 1, std::string::npos); // should work..
+		retval = std::make_tuple(nick, priv_msg);
+	} else if (msg.find("PART") != std::string::npos) {
+		// :<nick>!<user>@<user-ip> PART <channel> [:<parting-msg>]
+		// ignoring [:<parting-msg>] for now
+		std::size_t found = msg.find("!");
+		std::string nick = msg.substr(1, found - 1); // should work..
+		std::string part_msg = "";
+		retval = std::make_tuple(nick, part_msg);
+	} else if (msg.find("JOIN") != std::string::npos) {
+		// <nick>!<user>@<user-ip> JOIN <channel>
+		std::size_t found = msg.find("!");
+		std::string nick = msg.substr(1, found - 1);
+		found = msg.find("JOIN");
+		std::string channel = msg.substr(found + 5, std::string::npos);
+		retval = std::make_tuple(nick, channel);
+	} else {
+		std::string reply  = "ERROR, unrecognized message\n";
+		reply += msg + "\n";
+		std::string no_msg = "";
+		retval = std::make_tuple(reply, no_msg);
+	}
+	return retval;
 }
 
 int main(int argc, char **argv)
@@ -153,15 +295,33 @@ int main(int argc, char **argv)
 
 		serv_sock.connect(endpoint);
 
-		/*
-		boost::array<char, 128> buff;
-		boost::system::error_code ec;
-
-		size_t len = serv_sock.read_some(boost::asio::buffer(buff), ec);
-		std::cout.write(buff.data(), len);
-		*/
-
 		pass_user_into_to_server(this_user, serv_sock);
+
+		std::string channel = connect_to_channel(serv_sock);
+		this_user.set_channel(channel);
+
+		std::string msg;
+		msg  = "\n";
+		msg += "##########################\n";
+		msg += "Type and press <ENTER> to send a message\n";
+		msg += "Type EXIT and press <ENTER> to exit the client\n";
+		msg += "EXIT<ENTER>\n";
+		msg += "Type HELP and press <ENTER> to find out more\n";
+		msg += "HELP<ENTER>\n";
+		msg += "Have fun :)\n";
+		std::cout << to_cyan(msg);
+
+		for (;;) {
+			update_sock_msgs(serv_sock);
+
+			for (auto it = sock_msgs.begin(); it != sock_msgs.end();
+									++it) {
+				//std::string nick, msg_o;
+				//std::string reply = parse_session_msg(msg);
+				//std::tie(nick, msg_o) = parse_session_msg(*it);
+				parse_session_msg(*it);
+			}
+		}
 
 	}
 	catch (const std::exception& e)

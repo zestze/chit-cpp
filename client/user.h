@@ -46,17 +46,24 @@ class User
 		{
 		}
 
-		// data members
+
+		// member functions
+		void set_nick(std::string new_nick) { nick = new_nick; }
+		void set_pass(std::string new_pass) { password = new_pass; }
+		void set_channel(std::string new_chan) { channel = new_chan; }
+
+		std::string get_nick() { return nick; 	   }
+		std::string get_user() { return user_name; }
+		std::string get_real() { return real_name; }
+		std::string get_pass() { return password;  }
+		std::string get_chan() { return channel;   }
+
+	private:
 		std::string nick;
 		std::string user_name;
 		std::string real_name;
 		std::string password;
 		std::string channel;
-
-		// member functions
-		//void set_nick(std::string new_nick);
-		//void set_pass(std::string new_nick);
-		//void set_channel(std::string new_chan);
 };
 
 #endif
