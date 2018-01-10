@@ -10,8 +10,8 @@
 #include <boost/algorithm/string.hpp>
 #include <string>
 #include <deque>
-#include <array>
-#include <tuple>
+#include <array> // not needed
+#include <tuple> // not needed
 #include "user.h"
 #include "client.h"
 
@@ -232,37 +232,63 @@ std::string connect_to_channel(tcp::socket& sock)
 	}
 }
 
-std::tuple<std::string, std::string> parse_session_msg(std::string msg)
+void parse_session_msg(std::string msg)
 {
-	std::tuple<std::string, std::string> retval;
+	std::string reply;
 	if (msg.find("PRIVMSG") != std::string::npos) {
 		// :<nick>!<user>@<user-ip> PRIVMSG <channel> :<msg>
 		std::size_t found = msg.find("!");
 		std::string nick = msg.substr(1, found - 1); // should work...
 		found = msg.find(":", 1);
 		std::string priv_msg = msg.substr(found + 1, std::string::npos); // should work..
-		retval = std::make_tuple(nick, priv_msg);
+		reply = nick + ": " + priv_msg + "\n";
+		std::cout << to_cyan(reply);
 	} else if (msg.find("PART") != std::string::npos) {
 		// :<nick>!<user>@<user-ip> PART <channel> [:<parting-msg>]
 		// ignoring [:<parting-msg>] for now
 		std::size_t found = msg.find("!");
 		std::string nick = msg.substr(1, found - 1); // should work..
-		std::string part_msg = "";
-		retval = std::make_tuple(nick, part_msg);
+		found = msg.find("PART");
+		std::string channel = msg.substr(found + 5, std::string::npos);
+		reply = nick + " LEFT CHANNEL " + channel + "\n";
+		std::cout << to_cyan(reply);
 	} else if (msg.find("JOIN") != std::string::npos) {
 		// <nick>!<user>@<user-ip> JOIN <channel>
 		std::size_t found = msg.find("!");
 		std::string nick = msg.substr(1, found - 1);
 		found = msg.find("JOIN");
 		std::string channel = msg.substr(found + 5, std::string::npos);
-		retval = std::make_tuple(nick, channel);
+		//retval = std::make_tuple(nick, channel);
+		reply = nick + " JOINED CHANNEL " + channel + "\n";
+		std::cout << to_cyan(reply);
 	} else {
 		std::string reply  = "ERROR, unrecognized message\n";
 		reply += msg + "\n";
-		std::string no_msg = "";
-		retval = std::make_tuple(reply, no_msg);
+		//retval = std::make_tuple(reply, no_msg);
+		std::cout << reply;
 	}
-	return retval;
+}
+
+void parse_user_input(tcp::socket& sock, std::string msg, std::string channel)
+{
+	if (msg == "") {
+		return;
+	} else if (msg == "EXIT") {
+		std::string part_msg = "PART " + channel + "\r\n";
+		// ignoring :<part-msg>
+		try_writing_to_sock(sock, part_msg);
+	} else if (msg == "HELP") {
+		std::string to_client;
+		to_client  = "options...\n";
+		to_client += "EXIT: exit the client\n";
+		to_client += "HELP: print this dialog\n";
+		std::cout << to_cyan(to_client);
+	} else {
+		std::string priv_msg;
+		priv_msg  = "PRIVMSG " + channel;
+		priv_msg += " :" + msg + "\r\n";
+		try_writing_to_sock(sock, priv_msg);
+	}
 }
 
 int main(int argc, char **argv)
@@ -316,11 +342,15 @@ int main(int argc, char **argv)
 
 			for (auto it = sock_msgs.begin(); it != sock_msgs.end();
 									++it) {
-				//std::string nick, msg_o;
-				//std::string reply = parse_session_msg(msg);
-				//std::tie(nick, msg_o) = parse_session_msg(*it);
 				parse_session_msg(*it);
 			}
+
+			sock_msgs.clear();
+
+			std::cout << to_cyan(this_user.get_nick() + ": ");
+			std::cin >> msg;
+
+			parse_user_input(serv_sock, msg, this_user.get_chan());
 		}
 
 	}
