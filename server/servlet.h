@@ -39,12 +39,13 @@ class Servlet {
 
 		std::map<tcp::endpoint, std::deque<std::string>> end_msgs;
 
+		std::deque<User> users;
+
 	private:
 		std::string channel_name;
 		std::string topic;
 		//std::map<tcp::socket, User> sock_users; // not sure on using socket as key again.
 
-		std::deque<User> users;
 		// @TODO: carry remote endpoint with each user for map access
 };
 

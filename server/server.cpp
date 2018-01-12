@@ -35,51 +35,43 @@ std::map<tcp::endpoint, std::deque<std::string>> end_msgs;
 // @TODO: changed part of this function, but didn't finish with changes.
 std::string try_reading_from_sock(tcp::socket& sock)
 {
-	try {
-		//std::unique_lock<std::mutex> lock(msgs_lock);
-		tcp::endpoint end = sock.remote_endpoint();
-		if (end_msgs.count(end) && !end_msgs[end].empty()) {
-			std::string msg = end_msgs[end].front();
-			end_msgs[end].pop_front();
-			return msg;
-		}
-
-		std::vector<char> buff;
-		boost::system::error_code ec;
-		sock.read_some(boost::asio::buffer(buff), ec);
-		std::string full_msg(buff.begin(), buff.end());
-		std::vector<std::string> msgs;
-
-		boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
-		for (auto it = msgs.begin(); it != msgs.end(); ++it) {
-			if (*it != "")
-				end_msgs[end].push_back(*it);
-		}
-
-		// @TODO:
-		// honestly can grab first thing from adding in for loop
-		// don't add, just return. Will be smoother.
+	//std::unique_lock<std::mutex> lock(msgs_lock);
+	tcp::endpoint end = sock.remote_endpoint();
+	if (end_msgs.count(end) && !end_msgs[end].empty()) {
 		std::string msg = end_msgs[end].front();
 		end_msgs[end].pop_front();
 		return msg;
-	} catch (...) {
-		throw;
 	}
+
+	std::vector<char> buff;
+	boost::system::error_code ec;
+	sock.read_some(boost::asio::buffer(buff), ec);
+	std::string full_msg(buff.begin(), buff.end());
+	std::vector<std::string> msgs;
+
+	boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
+	for (auto it = msgs.begin(); it != msgs.end(); ++it) {
+		if (*it != "")
+			end_msgs[end].push_back(*it);
+	}
+
+	// @TODO:
+	// honestly can grab first thing from adding in for loop
+	// don't add, just return. Will be smoother.
+	std::string msg = end_msgs[end].front();
+	end_msgs[end].pop_front();
+	return msg;
 }
 
 void try_writing_to_sock(tcp::socket& sock, std::string msg)
 {
-	try {
-		if (msg.substr(msg.length() - 2, std::string::npos) != "\r\n")
-			throw std::invalid_argument("All IRC msgs need \\r\\n suffix");
-		boost::system::error_code ec;
-		boost::asio::write(sock, boost::asio::buffer(msg),
-				boost::asio::transfer_all(), ec);
-		// @TODO: implement proper async write, or have a timeout.
-		// this blocks until all in buffer is transmitted.
-	} catch (...) {
-		throw;
-	}
+	if (msg.substr(msg.length() - 2, std::string::npos) != "\r\n")
+		throw std::invalid_argument("All IRC msgs need \\r\\n suffix");
+	boost::system::error_code ec;
+	boost::asio::write(sock, boost::asio::buffer(msg),
+			boost::asio::transfer_all(), ec);
+	// @TODO: implement proper async write, or have a timeout.
+	// this blocks until all in buffer is transmitted.
 }
 
 // pass sockets to be reading from?
@@ -116,49 +108,41 @@ void update_sock_msgs(std::vector<tcp::socket> socks)
 
 User register_session(tcp::socket& sock)
 {
-	try {
-		std::string msg = try_reading_from_sock(sock);
-		// "NICK <nick>"
-		std::string nick = msg.substr(5, std::string::npos);
+	std::string msg = try_reading_from_sock(sock);
+	// "NICK <nick>"
+	std::string nick = msg.substr(5, std::string::npos);
 
-		msg = try_reading_from_sock(sock);
-		// "USER <user-name> * * :<real-name>"
-		std::deque<std::string> parts;
-		boost::algorithm::split(parts, msg, boost::is_any_of(" * * :"));
-		std::string part1, part2;
-		part1 = parts.front();
-		part2 = parts.back();
-		std::string user_name, real_name;
-		user_name = part1.substr(5, std::string::npos);
-		real_name = part2;
+	msg = try_reading_from_sock(sock);
+	// "USER <user-name> * * :<real-name>"
+	std::deque<std::string> parts;
+	boost::algorithm::split(parts, msg, boost::is_any_of(" * * :"));
+	std::string part1, part2;
+	part1 = parts.front();
+	part2 = parts.back();
+	std::string user_name, real_name;
+	user_name = part1.substr(5, std::string::npos);
+	real_name = part2;
 
-		// @TODO: should User carry socket with it?
-		User client(nick, user_name, real_name);
-		// send "<this-IP> 001 <nick> :Welcome to the Internet
-		// Relay Network <nick>!<user>@<their-IP>\r\n"
-		std::string rem_IP = sock.remote_endpoint().address().to_string();
-		std::string loc_IP = sock.local_endpoint().address().to_string();
+	// @TODO: should User carry socket with it?
+	User client(nick, user_name, real_name);
+	// send "<this-IP> 001 <nick> :Welcome to the Internet
+	// Relay Network <nick>!<user>@<their-IP>\r\n"
+	std::string rem_IP = sock.remote_endpoint().address().to_string();
+	std::string loc_IP = sock.local_endpoint().address().to_string();
 
-		msg  = loc_IP + " " + RPL_WELCOME + " " + nick + " :Welcome to";
-		msg += " the Internet Relay Network " + nick + "!" + user_name;
-		msg += "@" + rem_IP + "\r\n";
-		try_writing_to_sock(sock, msg);
+	msg  = loc_IP + " " + RPL_WELCOME + " " + nick + " :Welcome to";
+	msg += " the Internet Relay Network " + nick + "!" + user_name;
+	msg += "@" + rem_IP + "\r\n";
+	try_writing_to_sock(sock, msg);
 
-		return client;
-	} catch (...) {
-		throw;
-	}
+	return client;
 }
 
 std::string get_channel_name(tcp::socket& sock)
 {
-	try {
-		std::string msg = try_reading_from_sock(sock);
-		std::string channel = msg.substr(5, std::string::npos);
-		return channel;
-	} catch (...) {
-		throw;
-	}
+	std::string msg = try_reading_from_sock(sock);
+	std::string channel = msg.substr(5, std::string::npos);
+	return channel;
 }
 
 /*

@@ -10,48 +10,151 @@
 #include <iostream>
 #include <deque>
 #include <map>
+#include <boost/algorithm/string.hpp>
+
+// @TODO: changed part of this function, but didn't finish with changes.
+std::string try_reading_from_sock(Servlet& servlet, User user)
+{
+	tcp::endpoint end = user.get_endpt();
+	tcp::socket& sock = servlet.end_socks[end];
+	if (servlet.end_socks.count(end) && !servlet.end_msgs[end].empty()) {
+		std::string msg = servlet.end_msgs[end].front();
+		servlet.end_msgs[end].pop_front();
+		return msg;
+	}
+
+	std::vector<char> buff;
+	boost::system::error_code ec;
+	sock.read_some(boost::asio::buffer(buff), ec);
+	std::string full_msg(buff.begin(), buff.end());
+	std::vector<std::string> msgs;
+
+	boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
+	for (auto it = msgs.begin(); it != msgs.end(); ++it) {
+		if (*it != "")
+			servlet.end_msgs[end].push_back(*it);
+	}
+
+	std::string msg = servlet.end_msgs[end].front();
+	servlet.end_msgs[end].pop_front();
+	return msg;
+}
+
+void try_writing_to_sock(tcp::socket& sock, std::string msg)
+{
+	if (msg.substr(msg.length() - 2, std::string::npos) != "\r\n")
+		throw std::invalid_argument("All IRC msgs need \\r\\n suffix");
+	boost::system::error_code ec;
+	boost::asio::write(sock, boost::asio::buffer(msg),
+			boost::asio::transfer_all(), ec);
+	// @TODO: implement proper async write, or have a timeout.
+	// this blocks until all in buffer is transmitted.
+}
+
+// change name?
+std::deque<tcp::endpoint> update_end_msgs(Servlet& servlet)
+{
+	std::deque<tcp::endpoint> read_ends;
+	// note: it is a pair of <endpoint, socket>
+	for (auto es_it = servlet.end_socks.begin(); es_it != servlet.end_socks.end(); ++es_it) {
+		std::size_t len = es_it->second.available();
+		if (len <= 0)
+			continue;
+		read_ends.push_back(es_it->first);
+
+		tcp::endpoint end = es_it->first;
+		tcp::socket& sock = es_it->second;
+
+		std::vector<char> buff;
+		boost::system::error_code ec;
+		sock.read_some(boost::asio::buffer(buff), ec);
+		std::string full_msg(buff.begin(), buff.end());
+		std::vector<std::string> msgs;
+
+		boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
+		for (auto it = msgs.begin(); it != msgs.end(); ++it) {
+			if (*it != "")
+				servlet.end_msgs[end].push_back(*it);
+		}
+	}
+	return read_ends;
+}
 
 std::deque<User> grab_newusers(Servlet& servlet)
 {
-	try {
-		std::unique_lock<std::mutex> lck(newusers_lock);
-		std::string chan = servlet.get_chan();
-		std::deque<User> newusers;
-		for (auto it = chan_newusers[chan].begin(); it != chan_newusers[chan].end(); ++it) {
-			// copy over user
-			User new_u = std::get<0>(*it);
-			servlet.add_user(new_u);
+	std::unique_lock<std::mutex> lck(newusers_lock);
+	std::string chan = servlet.get_chan();
+	std::deque<User> newusers;
+	for (auto it = chan_newusers[chan].begin(); it != chan_newusers[chan].end(); ++it) {
+		// copy over user
+		User new_u = std::get<0>(*it);
+		servlet.add_user(new_u);
 
-			// copy over sock
-			tcp::socket temp(std::move(std::get<1>(*it))); // @TODO: check if move works
-			servlet.end_socks[new_u.get_endpt()];
-			servlet.end_socks[new_u.get_endpt()] = std::move(temp); // @TODO: see above
+		// copy over sock
+		tcp::socket temp(std::move(std::get<1>(*it))); // @TODO: check if move works
+		servlet.end_socks[new_u.get_endpt()];
+		servlet.end_socks[new_u.get_endpt()] = std::move(temp); // @TODO: see above
 
-			// copy over messages
-			servlet.end_msgs[new_u.get_endpt()] = std::get<2>(*it);
+		// copy over messages
+		servlet.end_msgs[new_u.get_endpt()] = std::get<2>(*it);
 
-			// for later handling of new users
-			newusers.push_back(new_u);
-		}
-		return newusers;
-	} catch (...) {
-		throw;
+		// for later handling of new users
+		newusers.push_back(new_u);
 	}
+	return newusers;
 }
 
 void handle_newusers(Servlet& servlet)
 {
-	try {
-		std::deque<User> newusers = grab_newusers(servlet);
-		for (auto it = newusers.begin(); it != newusers.end(); ++it) {
+	std::deque<User> newusers = grab_newusers(servlet);
+	std::deque<User> handled;
+	for (auto it = newusers.begin(); it != newusers.end(); ++it) {
+		User new_user = *it;
+		std::string rem_IP = new_user.get_endpt().address().to_string();
+		std::string msg;
+		msg  = new_user.get_nick() + "!" + new_user.get_user() + "@" + rem_IP;
+		msg += " JOIN " + new_user.get_chan() + "\r\n";
+
+		std::string user_names = "";
+		for (auto it2 = servlet.users.begin(); it2 != servlet.users.end(); ++it) {
+			// if user is in newusers, but not in handled, it shouldn't
+			// be included in curr list of users, and shouldn't be messsaged
+			// about this new person.
+			if (std::find(newusers.begin(), newusers.end(), *it2) != newusers.end()
+			&& std::find(handled.begin(), handled.end(), *it2) == handled.end())
+				continue;
+			tcp::endpoint end = it2->get_endpt();
+			try_writing_to_sock(servlet.end_socks[end], msg);
+			//@TODO: make own, try_writing_to_sock for this servlet
+			
+			user_names += "@" + it2->get_nick() + " ";
 		}
 
-		// now that info is grabbed, need to handle it.
-	} catch (...) {
-		throw;
+		std::string loc_IP;
+		loc_IP = servlet.end_socks[new_user.get_endpt()].local_endpoint().address().to_string();
+		msg  = loc_IP + " " + RPL_TOPIC + " ";
+		msg += new_user.get_nick() + " " + new_user.get_chan() + " ";
+		msg += ":" + servlet.get_topic() + "\r\n";
+		try_writing_to_sock(servlet.end_socks[new_user.get_endpt()], msg);
+
+		msg  = loc_IP + " " + RPL_NAMREPLY + " ";
+		msg += new_user.get_nick() + " " + new_user.get_chan() + " ";
+		msg += ":" + user_names + "\r\n";
+		try_writing_to_sock(servlet.end_socks[new_user.get_endpt()], msg);
+
+		msg  = loc_IP + " " + RPL_ENDOFNAMES + " ";
+		msg += new_user.get_nick() + " " + new_user.get_chan() + " ";
+		msg += ":End of NAMES list\r\n";
+		try_writing_to_sock(servlet.end_socks[new_user.get_endpt()], msg);
+
+		// new_user has been handleed, so make sure to put them in that deque
+		handled.push_back(new_user);
 	}
+
+	// now that info is grabbed, need to handle it.
 }
 
+// return TRUE if needs handling
 bool check_newusers(std::string chan)
 {
 	std::unique_lock<std::mutex> lck(newusers_lock);
@@ -61,48 +164,75 @@ bool check_newusers(std::string chan)
 		return false;
 }
 
-bool check_sockmsgs(Servlet servlet)
+// return portion of end_msgs that needs handling
+bool check_end_msgs(Servlet& servlet)
 {
-	std::unique_lock<std::mutex> lck(msgs_lock);
-	for (auto it = servlet.get_dict().begin(); it != servlet.get_dict().end();
-									++it) {
-		if (!sock_msgs[it->first].empty())
+	for (auto it = servlet.end_msgs.begin(); it != servlet.end_msgs.end(); ++it) {
+		if (!it->second.empty())
 			return true;
 	}
 	return false;
 }
 
-std::map<tcp::socket, std::deque<std::string>> copy_sockmsgs(Servlet servlet)
+void handle_msg(std::string msg, Servlet& servlet, tcp::endpoint end)
 {
-	std::unique_lock<std::mutex> lck(msgs_lock);
-	std::map<tcp::socket, std::deque<std::string>> retval;
-	for (auto sock = servlet.get_dict().begin(); sock != servlet.get_dict().end();
-									++sock) {
-		for (auto q_it = sock_msgs[sock->first].begin();
-				q_it!= sock_msgs[sock->first].end();
-				++q_it) {
-			retval[sock->first].push_back(*q_it);
+	User client;
+	for (auto it = servlet.users.begin(); it != servlet.users.end(); ++it) {
+		if (it->get_endpt() == end) {
+			client = *it;
+			break;
 		}
-		sock_msgs[sock->first].clear();
 	}
-	return retval;
-}
 
-void handle_msg(std::string msg, tcp::socket& sock, User user)
-{
-}
+	if (msg.substr(0, 7) == "PRIVMSG") {
+		// format read:
+		// PRIVMSG <channel> :<msg>
+		// format to write:
+		// :<nick>!<user>@<user-ip> PRIVMSG <channel> :<msg>
 
-void handle_sockmsgs(std::map<tcp::socket, std::deque<std::string>> local_sockmsgs,
-		Servlet servlet)
-{
-	for (auto sockdeq = local_sockmsgs.begin(); sockdeq != local_sockmsgs.end();
-			++sockdeq) {
-		for (auto msg = sockdeq->second.begin(); msg != sockdeq->second.end();
-				++msg) {
-			User this_client = servlet.get_dict()[sockdeq->first];
-			tcp::socket& sock = sockdeq->first;
-			handle_msg(*msg, sockdeq->first, this_client);
+		std::string clnt_IP = end.address().to_string();
+		std::string reply;
+		reply  = ":" + client.get_nick() + "!" + client.get_user() + "@";
+		reply += clnt_IP + " " + msg + "\r\n";
+		for (auto it = servlet.users.begin(); it != servlet.users.end(); ++it) {
+			if (it->get_endpt() == end)
+				continue;
+			// broadcast PRIVMSG to members besides one who sent it
+			tcp::socket& sock = servlet.end_socks[it->get_endpt()];
+			try_writing_to_sock(sock, msg);
 		}
+	} else if (msg.substr(0, 4) == "PART") {
+		// format read:
+		// PART <channel>
+		// format to write:
+		// :<nick>!<user>@<user-ip> PART <channel>
+
+		std::string clnt_IP = end.address().to_string();
+		std::string reply;
+		reply  = ":" + client.get_nick() + "!" + client.get_user() + "@";
+		reply += clnt_IP + " " + msg + "\r\n";
+		for (auto it = servlet.users.begin(); it != servlet.users.end(); ++it) {
+			if (it->get_endpt() == end)
+				continue;
+			tcp::socket& sock = servlet.end_socks[it->get_endpt()];
+			try_writing_to_sock(sock, msg);
+		}
+
+		// remove user from users deque
+		// del entry for end_msgs and end_socks
+		for (auto it = servlet.users.begin(); it != servlet.users.end(); ++it) {
+			if (it->get_endpt() == end) {
+				servlet.users.erase(it);
+				break;
+			}
+		}
+
+		servlet.end_msgs.erase(end);
+		servlet.end_socks.erase(end); // calling erase like this should implicitly close socket
+	} else {
+		std::cout << "Unrecognized Message:" << std::endl;
+		std::cout << msg << std::endl;
+		throw std::invalid_argument("Unrecognized message format");
 	}
 }
 
@@ -114,9 +244,22 @@ void run(Servlet servlet)
 			if (check)
 				handle_newusers(servlet);
 
-			check = check_sockmsgs(servlet);
-			if (!check)
-				continue;
+			//check = check_end_msgs(servlet);
+			//if (!check)
+				//continue;
+			update_end_msgs(servlet); // kind fo don't need return value...
+			// because there can be other msgs that need handling.
+			// Really just need to loop over end_msgs
+
+			// Handle end_msgs
+			for (auto em_it = servlet.end_msgs.begin(); em_it != servlet.end_msgs.end();
+					++em_it) {
+				for (auto msg = em_it->second.begin(); msg != em_it->second.end();
+						++msg) {
+					handle_msg(*msg, servlet, em_it->first);
+				}
+				em_it->second.clear();
+			}
 
 		}
 
