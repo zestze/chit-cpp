@@ -67,6 +67,9 @@ std::string try_reading_from_sock(tcp::socket& sock)
 				sock_msgs.push_back(*it);
 		}
 
+		// @TODO:
+		// honestly can grab first thing from adding in for loop
+		// don't add, just return. Will be smoother.
 		std::string retval = sock_msgs.front();
 		sock_msgs.pop_front();
 		return retval;

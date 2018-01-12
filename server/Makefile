@@ -7,7 +7,7 @@ CXXFLAGS 	= -g -Wall $(INCLUDES) -std=c++11
 LDFLAGS 	= -g
 LDLIBS 		= -lboost_system
 
-$(TARGET):
+$(TARGET): user.h
 
 .PHONY: clean
 clean:
