@@ -49,7 +49,7 @@ bool check_sockmsgs(Servlet servlet);
 
 void handle_sockmsgs(std::map<tcp::socket, std::deque<std::string>> local_sockmsgs,
 		Servlet servlet);
-void handle_msg(std::string msg, Servlet servlet);
+void handle_msg(std::string msg, tcp::socket& sock, User user);
 
 void run(Servlet servlet);
 

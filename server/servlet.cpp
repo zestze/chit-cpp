@@ -51,7 +51,7 @@ std::map<tcp::socket, std::deque<std::string>> copy_sockmsgs(Servlet servlet)
 	return retval;
 }
 
-void handle_msg(std::string msg, Servlet servlet)
+void handle_msg(std::string msg, tcp::socket& sock, User user)
 {
 }
 
@@ -62,7 +62,9 @@ void handle_sockmsgs(std::map<tcp::socket, std::deque<std::string>> local_sockms
 			++sockdeq) {
 		for (auto msg = sockdeq->second.begin(); msg != sockdeq->second.end();
 				++msg) {
-			handle_msg(*msg, servlet);
+			User this_client = servlet.get_dict()[sockdeq->first];
+			tcp::socket& sock = sockdeq->first;
+			handle_msg(*msg, sockdeq->first, this_client);
 		}
 	}
 }
