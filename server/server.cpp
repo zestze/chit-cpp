@@ -28,11 +28,15 @@
 
 
 //bool killself = false; @TODO: defined in servlet.h for the moment
+std::map<tcp::endpoint, std::deque<std::string>> end_msgs;
+// made local
 
-std::string try_reading_from_sock(tcp::endpoint end)
+// @TODO: changed part of this function, but didn't finish with changes.
+std::string try_reading_from_sock(tcp::socket& sock)
 {
 	try {
-		std::unique_lock<std::mutex> lock(msgs_lock);
+		//std::unique_lock<std::mutex> lock(msgs_lock);
+		tcp::endpoint end = sock.remote_endpoint();
 		if (end_msgs.count(end) && !end_msgs[end].empty()) {
 			std::string msg = end_msgs[end].front();
 			end_msgs[end].pop_front();
@@ -48,14 +52,14 @@ std::string try_reading_from_sock(tcp::endpoint end)
 		boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
 		for (auto it = msgs.begin(); it != msgs.end(); ++it) {
 			if (*it != "")
-				sock_msgs[sock].push_back(*it);
+				end_msgs[end].push_back(*it);
 		}
 
 		// @TODO:
 		// honestly can grab first thing from adding in for loop
 		// don't add, just return. Will be smoother.
-		std::string msg = sock_msgs[sock].front();
-		sock_msgs[sock].pop_front();
+		std::string msg = end_msgs[end].front();
+		end_msgs[end].pop_front();
 		return msg;
 	} catch (...) {
 		throw;
@@ -80,6 +84,8 @@ void try_writing_to_sock(tcp::socket& sock, std::string msg)
 // pass sockets to be reading from?
 // @TODO: read for all socks in ssock_msgs or pass a vector of socks and
 // just read from thos...
+// @TODO: not necessary for server level
+/*
 void update_sock_msgs(std::vector<tcp::socket> socks)
 {
 	try {
@@ -105,6 +111,7 @@ void update_sock_msgs(std::vector<tcp::socket> socks)
 		throw;
 	}
 }
+*/
 
 User register_session(tcp::socket& sock)
 {
@@ -193,16 +200,28 @@ int main(int argc, char **argv)
 			client.set_channel(channel);
 			add_client_to_dict(channel, client);
 
+			client.set_endpoint(sock.remote_endpoint());
+
 			// add socket and remote endpoint to end_sock
+			/* @TODO: unnecessary now.
 			{
 				std::unique_lock<std::mutex> lck(endsock_lock);
 				tcp::endpoint rem_end = sock.remote_endpoint();
 				end_sock[rem_end] = std::move(sock);
 				// @TODO: not sure if this will work... stD::move
 			}
+			*/
 
 			// @TODO: make servlet instance, pass it as arg in thread
 			// @TODO: make thread, run it in servlet.cpp
+			// @TODO: grab what's on end_msgs for this socket we ar epassing to
+			// servlet and find a way to pass the msgs to the servlet as well.
+			// attach msgs to whatever is being used to pass along socket and User.
+			// dict new_channel with
+			// @key: std::string channel_name
+			// @value: std::pair/tuple(std::move(socket), User new_user)
+			std::deque<std::string> temp_msgs = end_msgs[sock.remote_endpoint()];
+			end_msgs.erase(sock.remote_endpoint());
 		}
 	}
 	catch (const std::exception& e)

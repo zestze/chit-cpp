@@ -7,6 +7,7 @@
 #define __USER_H__
 
 #include <string>
+#include <boost/asio.hpp>
 
 // could really just be a struct instead of a class...
 class User
@@ -51,12 +52,17 @@ class User
 		void set_nick(std::string new_nick) { nick = new_nick; }
 		void set_pass(std::string new_pass) { password = new_pass; }
 		void set_channel(std::string new_chan) { channel = new_chan; }
+		void set_endpoint(boost::asio::ip::tcp::endpoint new_e)
+		{
+			endpt = new_e;
+		}
 
 		std::string get_nick() { return nick; 	   }
 		std::string get_user() { return user_name; }
 		std::string get_real() { return real_name; }
 		std::string get_pass() { return password;  }
 		std::string get_chan() { return channel;   }
+		boost::asio::ip::tcp::endpoint get_endpt() { return endpt; }
 
 	private:
 		std::string nick;
@@ -64,6 +70,7 @@ class User
 		std::string real_name;
 		std::string password;
 		std::string channel;
+		boost::asio::ip::tcp::endpoint endpt; // note: remote endpoint.
 };
 
 #endif

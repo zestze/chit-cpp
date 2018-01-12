@@ -31,15 +31,17 @@ std::string RPL_TOPIC 	   = "332";
 std::string RPL_NAMREPLY   = "252";
 std::string RPL_ENDOFNAMES = "366";
 
-std::map<std::string, std::deque<User>> chan_newusers;
-std::mutex newusers_lock;
 
-std::map<tcp::endpoint, std::deque<std::string>> end_msgs;
-std::mutex msgs_lock;
+std::map<std::string, std::deque<User>> chan_newusers; // chance this to type of lower @TODO
+std::mutex newusers_lock;
+// put more info in value part.
+// @TODO: deque of <User new_user, std::deque<std::string> msgs, tcp::socket sock> tuples
+
+
 //@TODO: only way to fix this is by making end_msgs local to each servlet...
 
-std::map<tcp::endpoint, tcp::socket> end_sock; //@TODO: better name?
-std::mutex endsock_lock;
+//std::map<tcp::endpoint, tcp::socket> end_sock; //@TODO: better name?
+//std::mutex endsock_lock;
 //std::shared_mutex end_sock_lock; // @TODO: R/W lock would be best here
 // @TODO: does this need a lock?
 

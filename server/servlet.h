@@ -32,25 +32,29 @@ class Servlet {
 		// member accessors
 		std::string get_chan() { return channel_name; }
 		std::string get_topic() { return topic; }
-		std::map<tcp::socket, User> get_dict() { return sock_users; }
+		//std::map<tcp::socket, User> get_dict() { return sock_users; }
 
 	private:
 		std::string channel_name;
 		std::string topic;
-		std::map<tcp::socket, User> sock_users; // not sure on using socket as key again.
+		//std::map<tcp::socket, User> sock_users; // not sure on using socket as key again.
+
+		std::map<tcp::endpoint, tcp::socket> end_socks;
+		std::deque<User> users;
+		// @TODO: carry remote endpoint with each user for map access
 };
 
-void handle_newusers(Servlet servlet);
+//void handle_newusers(Servlet servlet);
 
-std::map<tcp::socket, std::deque<std::string>> copy_sockmsgs(Servlet servlet);
+//std::map<tcp::socket, std::deque<std::string>> copy_sockmsgs(Servlet servlet);
 
-bool check_newusers(std::string chan);
-bool check_sockmsgs(Servlet servlet);
+//bool check_newusers(std::string chan);
+//bool check_sockmsgs(Servlet servlet);
 
-void handle_sockmsgs(std::map<tcp::socket, std::deque<std::string>> local_sockmsgs,
-		Servlet servlet);
-void handle_msg(std::string msg, tcp::socket& sock, User user);
+//void handle_sockmsgs(std::map<tcp::socket, std::deque<std::string>> local_sockmsgs,
+		//Servlet servlet);
+//void handle_msg(std::string msg, tcp::socket& sock, User user);
 
-void run(Servlet servlet);
+//void run(Servlet servlet);
 
 #endif
