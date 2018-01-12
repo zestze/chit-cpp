@@ -29,13 +29,13 @@
 
 //bool killself = false; @TODO: defined in servlet.h for the moment
 
-std::string try_reading_from_sock(tcp::socket& sock)
+std::string try_reading_from_sock(tcp::endpoint end)
 {
 	try {
 		std::unique_lock<std::mutex> lock(msgs_lock);
-		if (sock_msgs.count(sock) && !sock_msgs[sock].empty()) {
-			std::string msg = sock_msgs[sock].front();
-			sock_msgs[sock].pop_front();
+		if (end_msgs.count(end) && !end_msgs[end].empty()) {
+			std::string msg = end_msgs[end].front();
+			end_msgs[end].pop_front();
 			return msg;
 		}
 
@@ -192,6 +192,14 @@ int main(int argc, char **argv)
 			std::string channel = get_channel_name(sock);
 			client.set_channel(channel);
 			add_client_to_dict(channel, client);
+
+			// add socket and remote endpoint to end_sock
+			{
+				std::unique_lock<std::mutex> lck(endsock_lock);
+				tcp::endpoint rem_end = sock.remote_endpoint();
+				end_sock[rem_end] = std::move(sock);
+				// @TODO: not sure if this will work... stD::move
+			}
 
 			// @TODO: make servlet instance, pass it as arg in thread
 			// @TODO: make thread, run it in servlet.cpp
