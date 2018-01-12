@@ -16,6 +16,7 @@
 #include <deque>
 #include <mutex>
 #include <thread>
+#include <tuple>
 
 #include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>
@@ -160,6 +161,7 @@ std::string get_channel_name(tcp::socket& sock)
 	}
 }
 
+/*
 void add_client_to_dict(std::string chan, User client)
 {
 	std::unique_lock<std::mutex> dict_lock(newusers_lock);
@@ -168,6 +170,7 @@ void add_client_to_dict(std::string chan, User client)
 	else
 		chan_newusers[chan] = {client};
 }
+*/
 
 int main(int argc, char **argv)
 {
@@ -178,12 +181,14 @@ int main(int argc, char **argv)
 	std::cout << "Starting server..." << std::endl;
 	int listen_port = std::stoi(argv[1]);
 
+	std::map<std::string, std::thread> threads;
 	try
 	{
 		boost::asio::io_service io_service;
 		tcp::acceptor acceptor(io_service,
 				tcp::endpoint(tcp::v4(), listen_port));
 		// need to make events and threading support as well as catching ctrl+c
+
 		for (;;) {
 			tcp::socket sock(io_service);
 			acceptor.accept(sock);
@@ -195,10 +200,11 @@ int main(int argc, char **argv)
 			boost::asio::write(sock, boost::asio::buffer(msg), ec);
 			*/
 			User client = register_session(sock);
+			client.set_endpoint(sock.remote_endpoint());
 
 			std::string channel = get_channel_name(sock);
 			client.set_channel(channel);
-			add_client_to_dict(channel, client);
+			//add_client_to_dict(channel, client);
 
 			client.set_endpoint(sock.remote_endpoint());
 
@@ -222,6 +228,31 @@ int main(int argc, char **argv)
 			// @value: std::pair/tuple(std::move(socket), User new_user)
 			std::deque<std::string> temp_msgs = end_msgs[sock.remote_endpoint()];
 			end_msgs.erase(sock.remote_endpoint());
+
+			{
+				std::unique_lock<std::mutex> lck(newusers_lock);
+				if (!chan_newusers.count(channel))
+					chan_newusers[channel]; // initialize
+				chan_newusers[channel].push_back(
+						std::make_tuple(
+							client,
+							std::move(sock),
+							temp_msgs));
+				// @TODO: error likely here, since std::move(sock)
+				// is right, but then push_back in deque might try
+				// to coopy sock by value and cause error
+				// so, if this doesn't work, make an extra map
+				// with same key, but the value will be a deque of
+				// sockets. then do push_back(std::move(sock))
+			}
+
+			// don't need to account for else scenario here
+			if (!threads.count(channel)) {
+				// make servlet?
+				Servlet servlet(channel);
+				std::thread thr(run, servlet);
+				threads[channel] = std::move(thr);
+			}
 		}
 	}
 	catch (const std::exception& e)
@@ -229,17 +260,17 @@ int main(int argc, char **argv)
 		// @TODO: catch keyboard ctrl+c exception, clean up sockets and
 		// exit. Or do regardless, for any exception.
 		std::cout << e.what() << std::endl;
-		// @TODO: let threads now they need to kill selves.
-		// Should be an atomic change.
-		killself = true;
 
-		// @TODO: have a "join" waiting for all threads to finish.
-		// thus, need a list keeping reference of all threads.
+		killself = true; // made atomic in server.h, the assignment operator is said to be atomic
+		for (auto it = threads.begin(); it != threads.end(); ++it)
+			it->second.join(); // might not work??? it's a pointer so maybe... but no copy constr.
 		return -1;
 	}
 	catch (...)
 	{
 		std::cout << "Unrecognized error" << std::endl;
+		for (auto it = threads.begin(); it != threads.end(); ++it)
+			it->second.join();
 		return -1;
 	}
 	return 0;

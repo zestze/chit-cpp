@@ -33,13 +33,17 @@ class Servlet {
 		std::string get_chan() { return channel_name; }
 		std::string get_topic() { return topic; }
 		//std::map<tcp::socket, User> get_dict() { return sock_users; }
+		void add_user(User new_u) { users.push_back(new_u); }
+
+		std::map<tcp::endpoint, tcp::socket> end_socks; // @TODO: make private and make public functions
+
+		std::map<tcp::endpoint, std::deque<std::string>> end_msgs;
 
 	private:
 		std::string channel_name;
 		std::string topic;
 		//std::map<tcp::socket, User> sock_users; // not sure on using socket as key again.
 
-		std::map<tcp::endpoint, tcp::socket> end_socks;
 		std::deque<User> users;
 		// @TODO: carry remote endpoint with each user for map access
 };
@@ -55,6 +59,6 @@ class Servlet {
 		//Servlet servlet);
 //void handle_msg(std::string msg, tcp::socket& sock, User user);
 
-//void run(Servlet servlet);
+void run(Servlet servlet);
 
 #endif

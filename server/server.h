@@ -11,8 +11,10 @@
 #include <string>
 #include <map>
 #include <mutex>
-#include <shared_mutex>
+//#include <shared_mutex>
 #include <deque>
+#include <tuple>
+#include <atomic>
 
 #include "user.h"
 
@@ -21,7 +23,8 @@
 //@TODO: move these constants over to servlet.h or some shared 'h' file
 //since server.h will need to include servlet.h at some point.
 
-bool killself = false; // make an atomic variable?
+//bool killself = false; // make an atomic variable?
+std::atomic<bool> killself(false);
 
 using boost::asio::ip::tcp;
 
@@ -32,7 +35,13 @@ std::string RPL_NAMREPLY   = "252";
 std::string RPL_ENDOFNAMES = "366";
 
 
-std::map<std::string, std::deque<User>> chan_newusers; // chance this to type of lower @TODO
+// for purpose of passing info to child threads.
+std::map<
+	std::string,
+	std::deque<
+		std::tuple<User, tcp::socket, std::deque<std::string>>
+		>
+	> chan_newusers;
 std::mutex newusers_lock;
 // put more info in value part.
 // @TODO: deque of <User new_user, std::deque<std::string> msgs, tcp::socket sock> tuples

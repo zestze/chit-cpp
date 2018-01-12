@@ -11,8 +11,45 @@
 #include <deque>
 #include <map>
 
-void handle_newusers(Servlet servlet)
+std::deque<User> grab_newusers(Servlet& servlet)
 {
+	try {
+		std::unique_lock<std::mutex> lck(newusers_lock);
+		std::string chan = servlet.get_chan();
+		std::deque<User> newusers;
+		for (auto it = chan_newusers[chan].begin(); it != chan_newusers[chan].end(); ++it) {
+			// copy over user
+			User new_u = std::get<0>(*it);
+			servlet.add_user(new_u);
+
+			// copy over sock
+			tcp::socket temp(std::move(std::get<1>(*it))); // @TODO: check if move works
+			servlet.end_socks[new_u.get_endpt()];
+			servlet.end_socks[new_u.get_endpt()] = std::move(temp); // @TODO: see above
+
+			// copy over messages
+			servlet.end_msgs[new_u.get_endpt()] = std::get<2>(*it);
+
+			// for later handling of new users
+			newusers.push_back(new_u);
+		}
+		return newusers;
+	} catch (...) {
+		throw;
+	}
+}
+
+void handle_newusers(Servlet& servlet)
+{
+	try {
+		std::deque<User> newusers = grab_newusers(servlet);
+		for (auto it = newusers.begin(); it != newusers.end(); ++it) {
+		}
+
+		// now that info is grabbed, need to handle it.
+	} catch (...) {
+		throw;
+	}
 }
 
 bool check_newusers(std::string chan)
@@ -72,7 +109,7 @@ void handle_sockmsgs(std::map<tcp::socket, std::deque<std::string>> local_sockms
 void run(Servlet servlet)
 {
 	try {
-		while (!killself) { // make an atomic check.			h
+		while (!killself) {
 			bool check = check_newusers(servlet.get_chan());
 			if (check)
 				handle_newusers(servlet);
@@ -81,11 +118,11 @@ void run(Servlet servlet)
 			if (!check)
 				continue;
 
-			std::map<tcp::socket, std::deque<std::string>> local_sockmsgs;
-			local_sockmsgs = copy_sockmsgs(servlet);
-
-			handle_sockmsgs(local_sockmsgs, servlet);
 		}
+
+		// clean up, don't need to close sockets since map and deque should do
+		// implicitly by destructor call.
+		std::cout << "Thread exiting" << std::endl;
 	} catch (...) {
 		// @TODO: check if child threads can catch keyboard exceptions etc.
 		// since we want the parent thread to handle that stuff.
