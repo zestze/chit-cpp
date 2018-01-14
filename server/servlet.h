@@ -2,6 +2,8 @@
  * servlet.h
  *
  * Zeke Reyna
+ *
+ * @TODO: give descriptions for each function
  */
 #ifndef __SERVLET_H__
 #define __SERVLET_H__
@@ -52,9 +54,6 @@ class Servlet {
 	private:
 		std::string channel_name;
 		std::string topic;
-		//std::map<tcp::socket, User> sock_users; // not sure on using socket as key again.
-
-		// @TODO: carry remote endpoint with each user for map access
 };
 
 /*
@@ -70,6 +69,7 @@ void try_writing(tcp::socket& sock, std::string msg);
 std::deque<tcp::endpoint> update_end_msgs(Servlet& servlet);
 
 /*
+ * modifies servlet.users, and while grabbing users adds them
  */
 std::deque<User> grab_newusers(Servlet& servlet);
 

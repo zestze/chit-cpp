@@ -8,7 +8,6 @@
 
 #include "servlet.h"
 
-// @TODO: changed part of this function, but didn't finish with changes.
 std::string try_reading(Servlet& servlet, User user)
 {
 	tcp::endpoint end = user.get_endpt();
@@ -47,7 +46,6 @@ void try_writing(tcp::socket& sock, std::string msg)
 	// this blocks until all in buffer is transmitted.
 }
 
-// change name?
 std::deque<tcp::endpoint> update_end_msgs(Servlet& servlet)
 {
 	std::deque<tcp::endpoint> read_ends;
@@ -97,6 +95,9 @@ std::deque<User> grab_newusers(Servlet& servlet)
 		// for later handling of new users
 		newusers.push_back(new_u);
 	}
+
+	// clear the deque of 'newusers' in global list
+	chan_newusers[chan].clear();
 	return newusers;
 }
 
@@ -121,8 +122,7 @@ void handle_newusers(Servlet& servlet)
 				continue;
 			tcp::endpoint end = it2->get_endpt();
 			try_writing(servlet.end_socks[end], msg);
-			//@TODO: make own, try_writing for this servlet
-			
+
 			user_names += "@" + it2->get_nick() + " ";
 		}
 
@@ -160,7 +160,7 @@ bool check_newusers(std::string chan)
 		return false;
 }
 
-// return portion of end_msgs that needs handling
+// return TRUE if needs handling
 bool check_end_msgs(Servlet& servlet)
 {
 	for (auto it = servlet.end_msgs.begin(); it != servlet.end_msgs.end(); ++it) {
@@ -240,12 +240,7 @@ void run(Servlet servlet)
 			if (check)
 				handle_newusers(servlet);
 
-			//check = check_end_msgs(servlet);
-			//if (!check)
-				//continue;
-			update_end_msgs(servlet); // kind fo don't need return value...
-			// because there can be other msgs that need handling.
-			// Really just need to loop over end_msgs
+			update_end_msgs(servlet);
 
 			// Handle end_msgs
 			for (auto em_it = servlet.end_msgs.begin(); em_it != servlet.end_msgs.end();
@@ -258,7 +253,6 @@ void run(Servlet servlet)
 			}
 
 		}
-
 		// clean up, don't need to close sockets since map and deque should do
 		// implicitly by destructor call.
 		std::cout << "Thread exiting" << std::endl;

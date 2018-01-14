@@ -2,6 +2,8 @@
  * server.h
  *
  * Zeke Reyna
+ *
+ * @TODO: give descriptions for each method
  */
 
 #ifndef __SERVER_H__

@@ -3,15 +3,15 @@ CC 		= g++
 CXX 		= g++
 INCLUDES 	=
 CFLAGS 		= -g -Wall $(INCLUDES)
-CXXFLAGS 	= -g -Wall $(INCLUDES) -std=c++11
-LDFLAGS 	= -g
+CXXFLAGS 	= -g -Wall $(INCLUDES) -std=c++11 -pthread
+LDFLAGS 	= -g -pthread
 LDLIBS 		= -lboost_system
 
 $(TARGET): server.o servlet.o
 
-server.o: user.h servlet.h
+server.o: user.h servlet.h consts_globs_shared.h
 
-servlet.o: user.h server.h
+servlet.o: user.h consts_globs_shared.h
 
 .PHONY: clean
 clean:
