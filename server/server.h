@@ -8,50 +8,38 @@
 #define __SERVER_H__
 
 // includes, object and method definitions.
+#include <iostream>
 #include <string>
 #include <map>
-#include <mutex>
-//#include <shared_mutex>
+#include <vector>
 #include <deque>
+#include <mutex>
+#include <thread>
 #include <tuple>
 #include <atomic>
-
-#include "user.h"
-
 #include <boost/asio.hpp>
+#include <boost/algorithm/string.hpp>
 
-//@TODO: move these constants over to servlet.h or some shared 'h' file
-//since server.h will need to include servlet.h at some point.
-
-//bool killself = false; // make an atomic variable?
-std::atomic<bool> killself(false);
+#include "servlet.h"
+#include "user.h"
+#include "consts_globs_shared.h"
 
 using boost::asio::ip::tcp;
 
-// *************** constants ************
-std::string RPL_WELCOME    = "001";
-std::string RPL_TOPIC 	   = "332";
-std::string RPL_NAMREPLY   = "252";
-std::string RPL_ENDOFNAMES = "366";
+/*
+ */
+std::string try_reading_from_sock(tcp::socket& sock);
 
+/*
+ */
+void try_writing_to_sock(tcp::socket& sock, std::string msg);
 
-// for purpose of passing info to child threads.
-std::map<
-	std::string,
-	std::deque<
-		std::tuple<User, tcp::socket, std::deque<std::string>>
-		>
-	> chan_newusers;
-std::mutex newusers_lock;
-// put more info in value part.
-// @TODO: deque of <User new_user, std::deque<std::string> msgs, tcp::socket sock> tuples
+/*
+ */
+User register_session(tcp::socket& sock);
 
-
-//@TODO: only way to fix this is by making end_msgs local to each servlet...
-
-//std::map<tcp::endpoint, tcp::socket> end_sock; //@TODO: better name?
-//std::mutex endsock_lock;
-//std::shared_mutex end_sock_lock; // @TODO: R/W lock would be best here
-// @TODO: does this need a lock?
+/*
+ */
+std::string get_channel_name(tcp::socket& sock);
 
 #endif

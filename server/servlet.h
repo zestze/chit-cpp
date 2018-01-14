@@ -7,7 +7,15 @@
 #define __SERVLET_H__
 
 #include <string>
-#include "server.h"
+#include <iostream>
+#include <deque>
+#include <map>
+#include <boost/algorithm/string.hpp>
+
+#include "user.h"
+#include "consts_globs_shared.h"
+
+using boost::asio::ip::tcp;
 
 class Servlet {
 	public:
@@ -49,17 +57,40 @@ class Servlet {
 		// @TODO: carry remote endpoint with each user for map access
 };
 
-//void handle_newusers(Servlet servlet);
+/*
+ */
+std::string try_reading(Servlet& servlet, User user);
 
-//std::map<tcp::socket, std::deque<std::string>> copy_sockmsgs(Servlet servlet);
+/*
+ */
+void try_writing(tcp::socket& sock, std::string msg);
 
-//bool check_newusers(std::string chan);
-//bool check_sockmsgs(Servlet servlet);
+/*
+ */
+std::deque<tcp::endpoint> update_end_msgs(Servlet& servlet);
 
-//void handle_sockmsgs(std::map<tcp::socket, std::deque<std::string>> local_sockmsgs,
-		//Servlet servlet);
-//void handle_msg(std::string msg, tcp::socket& sock, User user);
+/*
+ */
+std::deque<User> grab_newusers(Servlet& servlet);
 
+/*
+ */
+void handle_newusers(Servlet& servlet);
+
+/*
+ */
+bool check_newusers(std::string chan);
+
+/*
+ */
+bool check_end_msgs(Servlet& servlet);
+
+/*
+ */
+void handle_msg(std::string msg, Servlet& servlet, tcp::endpoint end);
+
+/*
+ */
 void run(Servlet servlet);
 
 #endif

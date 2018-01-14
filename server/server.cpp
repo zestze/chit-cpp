@@ -9,26 +9,8 @@
  * @TODO: if using socket as key doesn't work, can use socket.rem_endpoint()!
  */
 
-#include <iostream>
-#include <string>
-#include <map>
-#include <vector>
-#include <deque>
-#include <mutex>
-#include <thread>
-#include <tuple>
-
-#include <boost/asio.hpp>
-#include <boost/algorithm/string.hpp>
-
-#include "servlet.h"
 #include "server.h"
-#include "user.h"
 
-//typedef std::map<tcp::socket, std::deque<std::string>> Dict;
-
-
-//bool killself = false; @TODO: defined in servlet.h for the moment
 std::map<tcp::endpoint, std::deque<std::string>> end_msgs;
 // made local
 

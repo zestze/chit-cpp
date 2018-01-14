@@ -7,13 +7,9 @@
  */
 
 #include "servlet.h"
-#include <iostream>
-#include <deque>
-#include <map>
-#include <boost/algorithm/string.hpp>
 
 // @TODO: changed part of this function, but didn't finish with changes.
-std::string try_reading_from_sock(Servlet& servlet, User user)
+std::string try_reading(Servlet& servlet, User user)
 {
 	tcp::endpoint end = user.get_endpt();
 	tcp::socket& sock = servlet.end_socks[end];
@@ -40,7 +36,7 @@ std::string try_reading_from_sock(Servlet& servlet, User user)
 	return msg;
 }
 
-void try_writing_to_sock(tcp::socket& sock, std::string msg)
+void try_writing(tcp::socket& sock, std::string msg)
 {
 	if (msg.substr(msg.length() - 2, std::string::npos) != "\r\n")
 		throw std::invalid_argument("All IRC msgs need \\r\\n suffix");
@@ -124,8 +120,8 @@ void handle_newusers(Servlet& servlet)
 			&& std::find(handled.begin(), handled.end(), *it2) == handled.end())
 				continue;
 			tcp::endpoint end = it2->get_endpt();
-			try_writing_to_sock(servlet.end_socks[end], msg);
-			//@TODO: make own, try_writing_to_sock for this servlet
+			try_writing(servlet.end_socks[end], msg);
+			//@TODO: make own, try_writing for this servlet
 			
 			user_names += "@" + it2->get_nick() + " ";
 		}
@@ -135,17 +131,17 @@ void handle_newusers(Servlet& servlet)
 		msg  = loc_IP + " " + RPL_TOPIC + " ";
 		msg += new_user.get_nick() + " " + new_user.get_chan() + " ";
 		msg += ":" + servlet.get_topic() + "\r\n";
-		try_writing_to_sock(servlet.end_socks[new_user.get_endpt()], msg);
+		try_writing(servlet.end_socks[new_user.get_endpt()], msg);
 
 		msg  = loc_IP + " " + RPL_NAMREPLY + " ";
 		msg += new_user.get_nick() + " " + new_user.get_chan() + " ";
 		msg += ":" + user_names + "\r\n";
-		try_writing_to_sock(servlet.end_socks[new_user.get_endpt()], msg);
+		try_writing(servlet.end_socks[new_user.get_endpt()], msg);
 
 		msg  = loc_IP + " " + RPL_ENDOFNAMES + " ";
 		msg += new_user.get_nick() + " " + new_user.get_chan() + " ";
 		msg += ":End of NAMES list\r\n";
-		try_writing_to_sock(servlet.end_socks[new_user.get_endpt()], msg);
+		try_writing(servlet.end_socks[new_user.get_endpt()], msg);
 
 		// new_user has been handleed, so make sure to put them in that deque
 		handled.push_back(new_user);
@@ -199,7 +195,7 @@ void handle_msg(std::string msg, Servlet& servlet, tcp::endpoint end)
 				continue;
 			// broadcast PRIVMSG to members besides one who sent it
 			tcp::socket& sock = servlet.end_socks[it->get_endpt()];
-			try_writing_to_sock(sock, msg);
+			try_writing(sock, msg);
 		}
 	} else if (msg.substr(0, 4) == "PART") {
 		// format read:
@@ -215,7 +211,7 @@ void handle_msg(std::string msg, Servlet& servlet, tcp::endpoint end)
 			if (it->get_endpt() == end)
 				continue;
 			tcp::socket& sock = servlet.end_socks[it->get_endpt()];
-			try_writing_to_sock(sock, msg);
+			try_writing(sock, msg);
 		}
 
 		// remove user from users deque

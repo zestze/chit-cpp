@@ -7,7 +7,11 @@ CXXFLAGS 	= -g -Wall $(INCLUDES) -std=c++11
 LDFLAGS 	= -g
 LDLIBS 		= -lboost_system
 
-$(TARGET): user.h
+$(TARGET): server.o servlet.o
+
+server.o: user.h servlet.h
+
+servlet.o: user.h server.h
 
 .PHONY: clean
 clean:
