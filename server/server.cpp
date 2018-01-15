@@ -127,11 +127,15 @@ int main(int argc, char **argv)
 				std::unique_lock<std::mutex> lck(newusers_lock);
 				if (!chan_newusers.count(channel))
 					chan_newusers[channel]; // initialize
+				/*
 				chan_newusers[channel].push_back(
 						std::make_tuple(
 							client,
 							std::move(sock),
 							temp_msgs));
+							*/
+				chan_newusers[channel].emplace_back(std::move(client),
+						std::move(sock), std::move(temp_msgs));
 				// @TODO: error likely here, since std::move(sock)
 				// is right, but then push_back in deque might try
 				// to coopy sock by value and cause error
