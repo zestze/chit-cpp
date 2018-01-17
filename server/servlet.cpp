@@ -30,10 +30,12 @@ std::string try_reading(Servlet& servlet, User user)
 		return msg;
 	}
 
-	std::vector<char> buff;
+	//std::vector<char> buff;
+	std::array<char, 128> buff = { };
 	boost::system::error_code ec;
 	sock.read_some(boost::asio::buffer(buff), ec);
-	std::string full_msg(buff.begin(), buff.end());
+	//std::string full_msg(buff.begin(), buff.end());
+	std::string full_msg(buff.data());
 	std::vector<std::string> msgs;
 
 	boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
@@ -95,10 +97,12 @@ void update_end_msgs(Servlet& servlet)
 		tcp::socket& sock = *sock_it;
 		tcp::endpoint end = sock.remote_endpoint();
 
-		std::vector<char> buff;
+		//std::vector<char> buff;
+		std::array<char, 128> buff = { };
 		boost::system::error_code ec;
 		sock.read_some(boost::asio::buffer(buff), ec);
-		std::string full_msg(buff.begin(), buff.end());
+		//std::string full_msg(buff.begin(), buff.end());
+		std::string full_msg(buff.data());
 		std::vector<std::string> msgs;
 
 		boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
@@ -335,7 +339,9 @@ void handle_msg(std::string msg, Servlet& servlet, tcp::endpoint end)
 		}
 	} else {
 		std::cout << "Unrecognized Message:" << std::endl;
+		std::cout << "Msg begin: ";
 		std::cout << msg << std::endl;
+		std::cout << "Msg end";
 		throw std::invalid_argument("Unrecognized message format");
 	}
 }

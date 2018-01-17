@@ -14,6 +14,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <array>
 #include <deque>
 #include <mutex>
 #include <thread>

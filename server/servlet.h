@@ -11,6 +11,7 @@
 #include <string>
 #include <iostream>
 #include <deque>
+#include <array>
 #include <map>
 #include <boost/algorithm/string.hpp>
 

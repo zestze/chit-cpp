@@ -10,12 +10,12 @@
 #include "server.h"
 
 /*      	INIT GLOBALS 		*/
-std::string RPL_WELCOME    = "001";
-std::string RPL_TOPIC      = "332";
-std::string RPL_NAMREPLY   = "252";
-std::string RPL_ENDOFNAMES = "366";
+std::string RPL_WELCOME;
+std::string RPL_TOPIC;
+std::string RPL_NAMREPLY;
+std::string RPL_ENDOFNAMES;
 
-std::atomic<bool> killself(false);
+std::atomic<bool> killself;
 
 std::map<std::string, std::deque<std::tuple<User, std::deque<std::string>>>> chan_newusers;
 
@@ -36,10 +36,22 @@ std::string try_reading_from_sock(tcp::socket& sock)
 		return msg;
 	}
 
-	std::vector<char> buff;
+	//std::vector<char> buff;
+	std::array<char, 128> buff = { };
 	boost::system::error_code ec;
-	sock.read_some(boost::asio::buffer(buff), ec);
-	std::string full_msg(buff.begin(), buff.end());
+	std::size_t len = sock.read_some(boost::asio::buffer(buff), ec);
+	if (len == 0)
+		std::cout << "Empty Read" << std::endl;
+	if (ec == boost::asio::error::eof) {
+		std::cout << "Socket closed" << std::endl;
+	} else if (ec) {
+		std::cout << "Other error during Read" << std::endl;
+		throw boost::system::system_error(ec);
+	}
+
+	//std::string full_msg(buff.begin(), buff.end());
+	std::string full_msg(buff.data());
+	std::cout << "FULL_MSG: " << full_msg << std::endl;
 	std::vector<std::string> msgs;
 
 	boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
@@ -47,6 +59,13 @@ std::string try_reading_from_sock(tcp::socket& sock)
 		if (*it != "")
 			end_msgs[end].push_back(*it);
 	}
+
+	/*
+	for (auto it = end_msgs[end].begin(); it != end_msgs[end].end(); ++it) {
+		std::cout << "end_msg[..] = " << *it << std::endl;
+		std::cout << "len(...) = " << it->size() << std::endl;
+	}
+	*/
 
 	// @TODO:
 	// honestly can grab first thing from adding in for loop
@@ -105,6 +124,16 @@ std::string get_channel_name(tcp::socket& sock)
 	return channel;
 }
 
+void set_globals()
+{
+	RPL_WELCOME    = "001";
+	RPL_TOPIC      = "332";
+	RPL_NAMREPLY   = "252";
+	RPL_ENDOFNAMES = "366";
+
+	killself = false;
+}
+
 int main(int argc, char **argv)
 {
 	if (argc != 2) {
@@ -114,7 +143,7 @@ int main(int argc, char **argv)
 	std::cout << "Starting server..." << std::endl;
 	int listen_port = std::stoi(argv[1]);
 
-	//init_globals();
+	set_globals();
 
 	std::map<std::string, std::thread> threads;
 	try
@@ -128,9 +157,11 @@ int main(int argc, char **argv)
 			acceptor.accept(sock);
 
 			std::cout << "Got a connection at listening port\n";
+			std::cout << "Going to register User\n";
 			User client = register_session(sock);
 			client.set_endpoint(sock.remote_endpoint());
 
+			std::cout << "Going to get channel pref\n";
 			std::string channel = get_channel_name(sock);
 			client.set_channel(channel);
 
@@ -145,12 +176,6 @@ int main(int argc, char **argv)
 					chan_newusers[channel]; // initialize
 				chan_newusers[channel].push_back(std::make_tuple(client,
 							temp_msgs));
-				// @TODO: error likely here, since std::move(sock)
-				// is right, but then push_back in deque might try
-				// to coopy sock by value and cause error
-				// so, if this doesn't work, make an extra map
-				// with same key, but the value will be a deque of
-				// sockets. then do push_back(std::move(sock))
 			}
 
 			{

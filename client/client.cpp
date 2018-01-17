@@ -55,10 +55,12 @@ std::string try_reading_from_sock(tcp::socket& sock)
 		//boost::array<char, 128> buff;
 		//std::array<char, 128> buff;
 		//std::size_t len = sock.read_some(boost::asio::buffer(buff), ec);
-		std::vector<char> buff;
+		//std::vector<char> buff;
+		std::array<char, 128> buff = { };
 		boost::system::error_code ec;
 		sock.read_some(boost::asio::buffer(buff), ec);
-		std::string full_msg(buff.begin(), buff.end());
+		//std::string full_msg(buff.begin(), buff.end());
+		std::string full_msg(buff.data());
 		std::vector<std::string> msgs;
 
 		boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
