@@ -16,29 +16,29 @@ class User
 		// default constructor
 		User()
 		{
-			nick      = "";
-			user_name = "";
-			real_name = "";
-			password  = "";
-			channel   = "";
+			_nick      = "";
+			_user_name = "";
+			_real_name = "";
+			_password  = "";
+			_channel   = "";
 		}
 
 		// constructor with params
 		User(const std::string n, const std::string u, const std::string r)
-			:nick{n}, user_name{u}, real_name{r}
+			:_nick{n}, _user_name{u}, _real_name{r}
 		{
-			password = "";
-			channel  = "";
+			_password = "";
+			_channel  = "";
 		}
 
 		// copy constructor
 		User(const User& other)
 		{
-			nick      = other.nick;
-			user_name = other.user_name;
-			real_name = other.real_name;
-			password  = other.password;
-			channel   = other.channel;
+			_nick      = other._nick;
+			_user_name = other._user_name;
+			_real_name = other._real_name;
+			_password  = other._password;
+			_channel   = other._channel;
 		}
 
 
@@ -49,27 +49,27 @@ class User
 
 
 		// member functions
-		void set_nick(std::string new_nick) { nick = new_nick; }
-		void set_pass(std::string new_pass) { password = new_pass; }
-		void set_channel(std::string new_chan) { channel = new_chan; }
+		void set_nick(std::string new_nick) { _nick = new_nick; }
+		void set_pass(std::string new_pass) { _password = new_pass; }
+		void set_channel(std::string new_chan) { _channel = new_chan; }
 		void set_endpoint(boost::asio::ip::tcp::endpoint new_e)
 		{
 			endpt = new_e;
 		}
 
-		std::string get_nick() { return nick; 	   }
-		std::string get_user() { return user_name; }
-		std::string get_real() { return real_name; }
-		std::string get_pass() { return password;  }
-		std::string get_chan() { return channel;   }
+		std::string get_nick() { return _nick; 	   }
+		std::string get_user() { return _user_name; }
+		std::string get_real() { return _real_name; }
+		std::string get_pass() { return _password;  }
+		std::string get_chan() { return _channel;   }
 		boost::asio::ip::tcp::endpoint get_endpt() { return endpt; }
 
 	private:
-		std::string nick;
-		std::string user_name;
-		std::string real_name;
-		std::string password;
-		std::string channel;
+		std::string _nick;
+		std::string _user_name;
+		std::string _real_name;
+		std::string _password;
+		std::string _channel;
 		boost::asio::ip::tcp::endpoint endpt; // note: remote endpoint.
 };
 

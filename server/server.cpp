@@ -9,7 +9,21 @@
 
 #include "server.h"
 
-std::map<tcp::endpoint, std::deque<std::string>> end_msgs;
+/*      	INIT GLOBALS 		*/
+std::string RPL_WELCOME    = "001";
+std::string RPL_TOPIC      = "332";
+std::string RPL_NAMREPLY   = "252";
+std::string RPL_ENDOFNAMES = "366";
+
+std::atomic<bool> killself(false);
+
+std::map<std::string, std::deque<std::tuple<User, std::deque<std::string>>>> chan_newusers;
+
+std::deque<tcp::socket> global_socks;
+std::mutex c_nu_lock;
+std::mutex g_s_lock;
+/*      	INIT GLOBALS 		*/
+
 
 // @TODO: changed part of this function, but didn't finish with changes.
 std::string try_reading_from_sock(tcp::socket& sock)
@@ -100,6 +114,8 @@ int main(int argc, char **argv)
 	std::cout << "Starting server..." << std::endl;
 	int listen_port = std::stoi(argv[1]);
 
+	//init_globals();
+
 	std::map<std::string, std::thread> threads;
 	try
 	{
@@ -124,18 +140,11 @@ int main(int argc, char **argv)
 			end_msgs.erase(sock.remote_endpoint());
 
 			{
-				std::unique_lock<std::mutex> lck(newusers_lock);
+				std::unique_lock<std::mutex> lck(c_nu_lock);
 				if (!chan_newusers.count(channel))
 					chan_newusers[channel]; // initialize
-				/*
-				chan_newusers[channel].push_back(
-						std::make_tuple(
-							client,
-							std::move(sock),
+				chan_newusers[channel].push_back(std::make_tuple(client,
 							temp_msgs));
-							*/
-				chan_newusers[channel].emplace_back(std::move(client),
-						std::move(sock), std::move(temp_msgs));
 				// @TODO: error likely here, since std::move(sock)
 				// is right, but then push_back in deque might try
 				// to coopy sock by value and cause error
@@ -144,9 +153,16 @@ int main(int argc, char **argv)
 				// sockets. then do push_back(std::move(sock))
 			}
 
+			{
+				std::unique_lock<std::mutex> lck(g_s_lock);
+				global_socks.push_back(std::move(sock));
+				// @TODO: push_back vs emplace_back ?
+			}
+
 			if (!threads.count(channel)) {
-				Servlet servlet(channel);
-				std::thread thr(run, servlet);
+				//Servlet servlet(channel);
+				//std::thread thr(run, servlet);
+				std::thread thr(run, channel);
 				threads[channel] = std::move(thr);
 			}
 		}

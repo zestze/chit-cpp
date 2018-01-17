@@ -22,23 +22,42 @@
 using boost::asio::ip::tcp;
 
 // *************** constants ************
-std::string RPL_WELCOME    = "001";
-std::string RPL_TOPIC 	   = "332";
-std::string RPL_NAMREPLY   = "252";
-std::string RPL_ENDOFNAMES = "366";
+//std::string RPL_WELCOME    = "001";
+extern std::string RPL_WELCOME;
+//std::string RPL_TOPIC 	   = "332";
+extern std::string RPL_TOPIC;
+//std::string RPL_NAMREPLY   = "252";
+extern std::string RPL_NAMREPLY;
+//std::string RPL_ENDOFNAMES = "366";
+extern std::string RPL_ENDOFNAMES;
 
 // *************** shared ****************
 // for purpose of telling threads to exit
-std::atomic<bool> killself(false);
+//std::atomic<bool> killself(false);
+extern std::atomic<bool> killself;
 
 // for purpose of passing info to child threads.
+/*
 std::map<
 	std::string,
 	std::deque<
 		std::tuple<User, tcp::socket, std::deque<std::string>>
 		>
 	> chan_newusers;
+	*/
 
-std::mutex newusers_lock;
+extern std::map<
+		std::string,
+		std::deque<
+			std::tuple<User, std::deque<std::string>>
+			>
+		> chan_newusers;
+
+extern std::deque<tcp::socket> global_socks;
+//std::mutex newusers_lock;
+
+extern std::mutex c_nu_lock; // for chan_newusers
+extern std::mutex g_s_lock; // for global_socks
+// lock for both chan_newusers and global_socks.
 
 #endif
