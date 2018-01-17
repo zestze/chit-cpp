@@ -5,6 +5,8 @@
  *
  * @TODO: sock_io ops need proper timeout mechanisms so doesn't block forever
  * or make actually async
+ *
+ * @TODO: revamp split method, use boost regex, or something
  */
 
 #include "server.h"
@@ -23,6 +25,35 @@ std::deque<tcp::socket> global_socks;
 std::mutex c_nu_lock;
 std::mutex g_s_lock;
 /*      	INIT GLOBALS 		*/
+
+// grabbed from studiofreya.com
+std::vector<std::string> split(std::string full_msg, std::string delim)
+{
+	std::vector<std::string> msgs;
+	const auto npos = std::string::npos;
+	const auto delim_size = delim.size();
+	std::size_t offset = 0;
+	std::size_t endpos = 0;
+	std::size_t len = 0;
+
+	do {
+		endpos = full_msg.find(delim, offset);
+		std::string temp;
+
+		if (endpos != npos) {
+			len = endpos - offset;
+			temp = full_msg.substr(offset, len);
+			msgs.push_back(temp);
+
+			offset = endpos + delim_size;
+		} else {
+			temp = full_msg.substr(offset);
+			msgs.push_back(temp);
+			break;
+		}
+	} while (endpos != npos);
+	return msgs;
+}
 
 
 // @TODO: changed part of this function, but didn't finish with changes.
@@ -54,7 +85,9 @@ std::string try_reading_from_sock(tcp::socket& sock)
 	std::cout << "FULL_MSG: " << full_msg << std::endl;
 	std::vector<std::string> msgs;
 
-	boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
+	//boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
+	//boost::algorithm::split(msgs, full_msg, "\r\n");
+	msgs = split(full_msg, "\r\n");
 	for (auto it = msgs.begin(); it != msgs.end(); ++it) {
 		if (*it != "")
 			end_msgs[end].push_back(*it);
@@ -94,8 +127,20 @@ User register_session(tcp::socket& sock)
 
 	msg = try_reading_from_sock(sock);
 	// "USER <user-name> * * :<real-name>"
+	std::cout << "MSG: " << msg << std::endl;
 	std::deque<std::string> parts;
-	boost::algorithm::split(parts, msg, boost::is_any_of(" * * :"));
+	std::vector<std::string> msgs;
+	//boost::algorithm::split(parts, msg, boost::is_any_of(" * * :"));
+	//boost::algorithm::split(parts, msg, " * * :");
+	//parts = split(msg, " * * :");
+	msgs = split(msg, " * * :");
+	for (auto msg = msgs.begin(); msg != msgs.end(); ++msg) {
+		parts.push_back(*msg);
+	}
+
+	for (auto it = parts.begin(); it != parts.end(); ++it) {
+		std::cout << "parts[..] = " << *it << std::endl;
+	}
 	std::string part1, part2;
 	part1 = parts.front();
 	part2 = parts.back();

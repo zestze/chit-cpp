@@ -73,6 +73,8 @@ class Servlet {
 		std::string _topic;
 };
 
+std::vector<std::string> split_(std::string full_msg, std::string delim);
+
 // returns iterator
 std::deque<tcp::socket>::iterator get_sock_for_user(Servlet& srvlt, User usr);
 

@@ -29,6 +29,8 @@
 
 using boost::asio::ip::tcp;
 
+std::vector<std::string> split(std::string full_msg, std::string delim);
+
 /*
  */
 std::string try_reading_from_sock(tcp::socket& sock);

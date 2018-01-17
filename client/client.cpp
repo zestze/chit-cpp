@@ -2,6 +2,8 @@
  * client.cpp
  *
  * Zeke Reyna
+ *
+ * @TODO: revamp split method, use regex, or something.
  */
 
 #include <iostream>
@@ -16,6 +18,8 @@
 #include "client.h"
 
 #include <unistd.h>
+#include <pwd.h>
+#include <stdio.h>
 #include <limits.h>
 
 using boost::asio::ip::tcp;
@@ -25,6 +29,35 @@ std::string RESERVED_CHARS[3] = {":", "!", "@"};
 std::deque<std::string> sock_msgs;
 
 bool DEBUG = true;
+
+// grabbed from studiofreya.com
+std::vector<std::string> split(std::string full_msg, std::string delim)
+{
+	std::vector<std::string> msgs;
+	const auto npos = std::string::npos;
+	const auto delim_size = delim.size();
+	std::size_t offset = 0;
+	std::size_t endpos = 0;
+	std::size_t len = 0;
+
+	do {
+		endpos = full_msg.find(delim, offset);
+		std::string temp;
+
+		if (endpos != npos) {
+			len = endpos - offset;
+			temp = full_msg.substr(offset, len);
+			msgs.push_back(temp);
+
+			offset = endpos + delim_size;
+		} else {
+			temp = full_msg.substr(offset);
+			msgs.push_back(temp);
+			break;
+		}
+	} while (endpos != npos);
+	return msgs;
+}
 
 void try_writing_to_sock(tcp::socket& sock, std::string msg)
 {
@@ -63,7 +96,9 @@ std::string try_reading_from_sock(tcp::socket& sock)
 		std::string full_msg(buff.data());
 		std::vector<std::string> msgs;
 
-		boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
+		//boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
+		//boost::algorithm::split(msgs, full_msg, "\r\n");
+		msgs = split(full_msg, "\r\n");
 		for (auto it = msgs.begin(); it != msgs.end(); ++it) {
 			if (*it != "")
 				sock_msgs.push_back(*it);
@@ -95,7 +130,9 @@ void update_sock_msgs(tcp::socket& sock)
 		std::string full_msg(buff.begin(), buff.end());
 		std::vector<std::string> msgs;
 
-		boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
+		//boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
+		//boost::algorithm::split(msgs, full_msg, "\r\n");
+		msgs = split(full_msg, "\r\n");
 		for (auto it = msgs.begin(); it != msgs.end(); ++it) {
 			if (*it != "")
 				sock_msgs.push_back(*it);
@@ -124,16 +161,18 @@ User query_and_create()
 	std::string nick;
 	std::cin >> nick;
 
-	char user_name[LOGIN_NAME_MAX];
-	getlogin_r(user_name, LOGIN_NAME_MAX);
-	std::string user(user_name);
+	struct passwd *pw;
+	uid_t uid;
+	uid = geteuid();
+	pw = getpwuid(uid);
+	std::string user(pw->pw_name);
 
 	msg  = "What is your real name?\n";
 	std::cout << to_cyan(msg);
 	std::string real;
 	std::cin >> real;
 
-	return User(nick, user, nick);
+	return User(nick, user, real);
 }
 
 void pass_user_into_to_server(User this_user, tcp::socket& serv_sock)
@@ -162,7 +201,9 @@ std::string parse_topic_msg(std::string msg)
 {
 	std::string new_msg = "";
 	std::vector<std::string> parts;
-	boost::algorithm::split(parts, msg, boost::is_any_of(":"));
+	//boost::algorithm::split(parts, msg, boost::is_any_of(":"));
+	//boost::algorithm::split(parts, msg, ":");
+	parts = split(msg, ":");
 	// this is more complicated than it should be for using a maxsplit of 1
 	for (auto it = parts.begin(); it != parts.end(); ++it) {
 		if (it == parts.begin())

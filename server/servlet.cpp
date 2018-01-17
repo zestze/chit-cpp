@@ -4,9 +4,40 @@
  * Zeke Reyna
  *
  * @TODO: all need to be wrapped in try / catch?
+ *
+ * @TODO: revamp split_ method, give better name, or use boost regex
  */
 
 #include "servlet.h"
+
+// grabbed from studiofreya.com
+std::vector<std::string> split_(std::string full_msg, std::string delim)
+{
+	std::vector<std::string> msgs;
+	const auto npos = std::string::npos;
+	const auto delim_size = delim.size();
+	std::size_t offset = 0;
+	std::size_t endpos = 0;
+	std::size_t len = 0;
+
+	do {
+		endpos = full_msg.find(delim, offset);
+		std::string temp;
+
+		if (endpos != npos) {
+			len = endpos - offset;
+			temp = full_msg.substr(offset, len);
+			msgs.push_back(temp);
+
+			offset = endpos + delim_size;
+		} else {
+			temp = full_msg.substr(offset);
+			msgs.push_back(temp);
+			break;
+		}
+	} while (endpos != npos);
+	return msgs;
+}
 
 // returns iterator
 std::deque<tcp::socket>::iterator get_sock_for_user(Servlet& srvlt, User usr)
@@ -38,7 +69,9 @@ std::string try_reading(Servlet& servlet, User user)
 	std::string full_msg(buff.data());
 	std::vector<std::string> msgs;
 
-	boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
+	//boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
+	//boost::algorithm::split(msgs, full_msg, "\r\n");
+	msgs = split_(full_msg, "\r\n");
 	for (auto it = msgs.begin(); it != msgs.end(); ++it) {
 		if (*it != "")
 			servlet.end_msgs[end].push_back(*it);
@@ -105,7 +138,9 @@ void update_end_msgs(Servlet& servlet)
 		std::string full_msg(buff.data());
 		std::vector<std::string> msgs;
 
-		boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
+		//boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
+		//boost::algorithm::split(msgs, full_msg, "\r\n");
+		msgs = split_(full_msg, "\r\n");
 		for (auto msg = msgs.begin(); msg != msgs.end(); ++msg) {
 			if (*msg != "")
 				servlet.end_msgs[end].push_back(*msg);
