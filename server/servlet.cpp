@@ -10,24 +10,6 @@
 
 #include "servlet.h"
 
-// for printing stacktrace
-#include <stdio.h>
-#include <execinfo.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-void handler(int sig) {
-	void *array[10];
-	size_t size;
-
-	size = backtrace(array, 10);
-
-	fprintf(stderr, "Error: signal %d:\n", sig);
-	backtrace_symbols_fd(array, size, STDERR_FILENO);
-	exit(1);
-}
-// for printing backtrace
 
 // grabbed from studiofreya.com
 std::vector<std::string> split_(std::string full_msg, std::string delim)
@@ -80,16 +62,12 @@ std::string try_reading(Servlet& servlet, User user)
 		return msg;
 	}
 
-	//std::vector<char> buff;
 	std::array<char, 128> buff = { };
 	boost::system::error_code ec;
 	sock.read_some(boost::asio::buffer(buff), ec);
-	//std::string full_msg(buff.begin(), buff.end());
 	std::string full_msg(buff.data());
 	std::vector<std::string> msgs;
 
-	//boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
-	//boost::algorithm::split(msgs, full_msg, "\r\n");
 	msgs = split_(full_msg, "\r\n");
 	for (auto it = msgs.begin(); it != msgs.end(); ++it) {
 		if (*it != "")
@@ -123,16 +101,12 @@ void update_end_msgs(Servlet& servlet)
 		tcp::socket& sock = *sock_it;
 		tcp::endpoint end = sock.remote_endpoint();
 
-		//std::vector<char> buff;
 		std::array<char, 128> buff = { };
 		boost::system::error_code ec;
 		sock.read_some(boost::asio::buffer(buff), ec);
-		//std::string full_msg(buff.begin(), buff.end());
 		std::string full_msg(buff.data());
 		std::vector<std::string> msgs;
 
-		//boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
-		//boost::algorithm::split(msgs, full_msg, "\r\n");
 		msgs = split_(full_msg, "\r\n");
 		for (auto msg = msgs.begin(); msg != msgs.end(); ++msg) {
 			if (*msg != "")
@@ -204,13 +178,6 @@ bool check_user_in(User user, std::deque<User> list_)
 
 void handle_newusers(Servlet& servlet)
 {
-	// @TODO: need to grab sockets and put them into servlet as well.
-	/*
-	std::cout << "grab_newusers\n";
-	std::deque<User> newusers = grab_newusers(servlet);
-	std::cout << "get_newsockets\n";
-	get_newsockets(servlet);
-	*/
 	std::deque<User> newusers = grab_new(servlet);
 	std::deque<User> handled;
 	for (auto it = newusers.begin(); it != newusers.end(); ++it) {
@@ -235,13 +202,6 @@ void handle_newusers(Servlet& servlet)
 			if (check_user_in(*it2, newusers) && !check_user_in(*it2, handled))
 				continue;
 			std::cout << "didn't go through continue\n";
-			/*
-			if (std::find(newusers.begin(), newusers.end(), *it2) != newusers.end()
-			&& std::find(handled.begin(), handled.end(), *it2) == handled.end())
-				continue;
-				*/
-			//tcp::endpoint end = it2->get_endpt();
-			//try_writing(servlet.end_socks[end], msg);
 			try_writing(servlet, *it2, msg);
 
 			user_names += "@" + it2->get_nick() + " ";
@@ -257,23 +217,17 @@ void handle_newusers(Servlet& servlet)
 		msg  = loc_IP + " " + RPL_TOPIC + " ";
 		msg += new_user.get_nick() + " " + new_user.get_chan() + " ";
 		msg += ":" + servlet.get_topic() + "\r\n";
-		//try_writing(servlet.end_socks[new_user.get_endpt()], msg);
 		try_writing(servlet, new_user, msg);
 
 		msg  = loc_IP + " " + RPL_NAMREPLY + " ";
 		msg += new_user.get_nick() + " " + new_user.get_chan() + " ";
 		msg += ":" + user_names + "\r\n";
-		//try_writing(servlet.end_socks[new_user.get_endpt()], msg);
 		try_writing(servlet, new_user, msg);
 
 		msg  = loc_IP + " " + RPL_ENDOFNAMES + " ";
 		msg += new_user.get_nick() + " " + new_user.get_chan() + " ";
 		msg += ":End of NAMES list\r\n";
-		//try_writing(servlet.end_socks[new_user.get_endpt()], msg);
 		try_writing(servlet, new_user, msg);
-
-		// new_user has been handleed, so make sure to put them in that deque
-		//handled.push_back(new_user);
 	}
 	std::cout << "done with loop\n";
 
@@ -326,9 +280,6 @@ void handle_msg(std::string msg, Servlet& servlet, tcp::endpoint end)
 			if (it->get_endpt() == end)
 				continue;
 			// broadcast PRIVMSG to members besides one who sent it
-			//tcp::socket& sock = servlet.end_socks[it->get_endpt()];
-			//tcp::socket& sock = *get_sock_for_user(servlet, *it);
-			//try_writing(sock, msg);
 			try_writing(servlet, *it, msg);
 		}
 	} else if (msg.substr(0, 4) == "PART") {
@@ -346,8 +297,6 @@ void handle_msg(std::string msg, Servlet& servlet, tcp::endpoint end)
 		for (auto it = servlet.users.begin(); it != servlet.users.end(); ++it) {
 			if (it->get_endpt() == end)
 				continue;
-			//tcp::socket& sock = servlet.end_socks[it->get_endpt()];
-			//try_writing(sock, msg);
 			try_writing(servlet, *it, msg);
 		}
 
@@ -381,7 +330,6 @@ void handle_msg(std::string msg, Servlet& servlet, tcp::endpoint end)
 
 void run(std::string channel)
 {
-	signal(SIGSEGV, handler); // for printing stacktrace
 	try {
 		Servlet servlet(channel);
 		while (!killself) {

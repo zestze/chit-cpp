@@ -49,7 +49,6 @@ std::string get_channel_name(tcp::socket& sock);
 
 /*
  */
-//void init_globals();
 
 std::map<tcp::endpoint, std::deque<std::string>> end_msgs;
 

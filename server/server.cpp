@@ -20,10 +20,7 @@ std::string RPL_ENDOFNAMES;
 std::atomic<bool> killself;
 
 std::map<std::string, std::deque<std::tuple<User, std::deque<std::string>>>> chan_newusers;
-
 std::deque<tcp::socket> global_socks;
-//std::mutex c_nu_lock;
-//std::mutex g_s_lock;
 std::mutex gl_lock;
 /*      	INIT GLOBALS 		*/
 
@@ -60,7 +57,6 @@ std::vector<std::string> split(std::string full_msg, std::string delim)
 // @TODO: changed part of this function, but didn't finish with changes.
 std::string try_reading_from_sock(tcp::socket& sock)
 {
-	//std::unique_lock<std::mutex> lock(msgs_lock);
 	tcp::endpoint end = sock.remote_endpoint();
 	if (end_msgs.count(end) && !end_msgs[end].empty()) {
 		std::string msg = end_msgs[end].front();
@@ -68,7 +64,6 @@ std::string try_reading_from_sock(tcp::socket& sock)
 		return msg;
 	}
 
-	//std::vector<char> buff;
 	std::array<char, 128> buff = { };
 	boost::system::error_code ec;
 	std::size_t len = sock.read_some(boost::asio::buffer(buff), ec);
@@ -81,25 +76,15 @@ std::string try_reading_from_sock(tcp::socket& sock)
 		throw boost::system::system_error(ec);
 	}
 
-	//std::string full_msg(buff.begin(), buff.end());
 	std::string full_msg(buff.data());
 	std::cout << "FULL_MSG: " << full_msg << std::endl;
 	std::vector<std::string> msgs;
 
-	//boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
-	//boost::algorithm::split(msgs, full_msg, "\r\n");
 	msgs = split(full_msg, "\r\n");
 	for (auto it = msgs.begin(); it != msgs.end(); ++it) {
 		if (*it != "")
 			end_msgs[end].push_back(*it);
 	}
-
-	/*
-	for (auto it = end_msgs[end].begin(); it != end_msgs[end].end(); ++it) {
-		std::cout << "end_msg[..] = " << *it << std::endl;
-		std::cout << "len(...) = " << it->size() << std::endl;
-	}
-	*/
 
 	// @TODO:
 	// honestly can grab first thing from adding in for loop
@@ -131,9 +116,6 @@ User register_session(tcp::socket& sock)
 	std::cout << "MSG: " << msg << std::endl;
 	std::deque<std::string> parts;
 	std::vector<std::string> msgs;
-	//boost::algorithm::split(parts, msg, boost::is_any_of(" * * :"));
-	//boost::algorithm::split(parts, msg, " * * :");
-	//parts = split(msg, " * * :");
 	msgs = split(msg, " * * :");
 	for (auto msg = msgs.begin(); msg != msgs.end(); ++msg) {
 		parts.push_back(*msg);
@@ -218,38 +200,12 @@ int main(int argc, char **argv)
 
 			{
 				std::unique_lock<std::mutex> lck(gl_lock);
-				/*
-				if (!chan_newusers.count(channel)) {
-					chan_newusers[channel]; // initialize
-				}
-				*/
-				/*
-				chan_newusers[channel].push_back(std::make_tuple(client,
-							temp_msgs));
-							*/
 				chan_newusers[channel].push_back(std::make_tuple(client,
 							temp_msgs));
 				global_socks.push_back(std::move(sock));
 			}
-			/*
-			{
-				std::unique_lock<std::mutex> lck(c_nu_lock);
-				if (!chan_newusers.count(channel))
-					chan_newusers[channel]; // initialize
-				chan_newusers[channel].push_back(std::make_tuple(client,
-							temp_msgs));
-			}
-
-			{
-				std::unique_lock<std::mutex> lck(g_s_lock);
-				global_socks.push_back(std::move(sock));
-				// @TODO: push_back vs emplace_back ?
-			}
-			*/
 
 			if (!threads.count(channel)) {
-				//Servlet servlet(channel);
-				//std::thread thr(run, servlet);
 				std::thread thr(run, channel);
 				threads[channel] = std::move(thr);
 			}

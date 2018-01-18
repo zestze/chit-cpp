@@ -22,26 +22,6 @@
 #include <stdio.h>
 #include <limits.h>
 
-// for printing stacktrace
-#include <stdio.h>
-#include <execinfo.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-void handler(int sig) {
-	void *array[10];
-	size_t size;
-
-	size = backtrace(array, 10);
-
-	fprintf(stderr, "Error: signal %d:\n", sig);
-	backtrace_symbols_fd(array, size, STDERR_FILENO);
-	exit(1);
-}
-// for printing backtrace
-
-
 using boost::asio::ip::tcp;
 
 std::string RESERVED_CHARS[3] = {":", "!", "@"};
@@ -104,22 +84,14 @@ std::string try_reading_from_sock(tcp::socket& sock)
 			return retval;
 		}
 
-		//std::string full_msg;
-		//boost::array<char, 128> buff;
-		//std::array<char, 128> buff;
-		//std::size_t len = sock.read_some(boost::asio::buffer(buff), ec);
-		//std::vector<char> buff;
 		std::array<char, 128> buff = { };
 		boost::system::error_code ec;
 		sock.read_some(boost::asio::buffer(buff), ec);
-		//std::string full_msg(buff.begin(), buff.end());
 		std::string full_msg(buff.data());
 		std::vector<std::string> msgs;
 
 		std::cout << "FULL_MSG: " << full_msg << std::endl;
 
-		//boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
-		//boost::algorithm::split(msgs, full_msg, "\r\n");
 		msgs = split(full_msg, "\r\n");
 		for (auto it = msgs.begin(); it != msgs.end(); ++it) {
 			if (*it != "") {
@@ -155,8 +127,6 @@ void update_sock_msgs(tcp::socket& sock)
 		std::vector<std::string> msgs;
 
 		std::cout << "FULL_MSG: " << full_msg << std::endl;
-		//boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
-		//boost::algorithm::split(msgs, full_msg, "\r\n");
 		msgs = split(full_msg, "\r\n");
 		for (auto it = msgs.begin(); it != msgs.end(); ++it) {
 			if (*it != "") {
@@ -230,10 +200,7 @@ std::string parse_topic_msg(std::string msg)
 {
 	std::string new_msg = "";
 	std::vector<std::string> parts;
-	//boost::algorithm::split(parts, msg, boost::is_any_of(":"));
-	//boost::algorithm::split(parts, msg, ":");
 	parts = split(msg, ":");
-	// this is more complicated than it should be for using a maxsplit of 1
 	for (auto it = parts.begin(); it != parts.end(); ++it) {
 		if (it == parts.begin())
 			continue;
@@ -339,13 +306,11 @@ void parse_session_msg(std::string msg)
 		std::string nick = msg.substr(1, found - 1);
 		found = msg.find("JOIN");
 		std::string channel = msg.substr(found + 5, std::string::npos);
-		//retval = std::make_tuple(nick, channel);
 		reply = nick + " JOINED CHANNEL " + channel + "\n";
 		std::cout << to_cyan(reply);
 	} else {
 		std::string reply  = "ERROR, unrecognized message\n";
 		reply += msg + "\n";
-		//retval = std::make_tuple(reply, no_msg);
 		std::cout << reply;
 		throw std::invalid_argument("not parseable message\n");
 	}
@@ -389,11 +354,9 @@ int main(int argc, char **argv)
 	int serv_port = std::stoi(argv[2]);
 
 	// might need to add support for strings other than localhost
-	// str::string is unnecessary
 	if (serv_ip == "localhost")
 		serv_ip = "127.0.0.1";
 
-	signal(SIGSEGV, handler); // for printing stacktrace
 	try
 	{
 		User this_user = query_and_create();
