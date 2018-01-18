@@ -22,8 +22,9 @@ std::atomic<bool> killself;
 std::map<std::string, std::deque<std::tuple<User, std::deque<std::string>>>> chan_newusers;
 
 std::deque<tcp::socket> global_socks;
-std::mutex c_nu_lock;
-std::mutex g_s_lock;
+//std::mutex c_nu_lock;
+//std::mutex g_s_lock;
+std::mutex gl_lock;
 /*      	INIT GLOBALS 		*/
 
 // grabbed from studiofreya.com
@@ -216,6 +217,22 @@ int main(int argc, char **argv)
 			end_msgs.erase(sock.remote_endpoint());
 
 			{
+				std::unique_lock<std::mutex> lck(gl_lock);
+				/*
+				if (!chan_newusers.count(channel)) {
+					chan_newusers[channel]; // initialize
+				}
+				*/
+				/*
+				chan_newusers[channel].push_back(std::make_tuple(client,
+							temp_msgs));
+							*/
+				chan_newusers[channel].push_back(std::make_tuple(client,
+							temp_msgs));
+				global_socks.push_back(std::move(sock));
+			}
+			/*
+			{
 				std::unique_lock<std::mutex> lck(c_nu_lock);
 				if (!chan_newusers.count(channel))
 					chan_newusers[channel]; // initialize
@@ -228,6 +245,7 @@ int main(int argc, char **argv)
 				global_socks.push_back(std::move(sock));
 				// @TODO: push_back vs emplace_back ?
 			}
+			*/
 
 			if (!threads.count(channel)) {
 				//Servlet servlet(channel);

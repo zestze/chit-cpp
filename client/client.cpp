@@ -22,6 +22,26 @@
 #include <stdio.h>
 #include <limits.h>
 
+// for printing stacktrace
+#include <stdio.h>
+#include <execinfo.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+void handler(int sig) {
+	void *array[10];
+	size_t size;
+
+	size = backtrace(array, 10);
+
+	fprintf(stderr, "Error: signal %d:\n", sig);
+	backtrace_symbols_fd(array, size, STDERR_FILENO);
+	exit(1);
+}
+// for printing backtrace
+
+
 using boost::asio::ip::tcp;
 
 std::string RESERVED_CHARS[3] = {":", "!", "@"};
@@ -96,12 +116,16 @@ std::string try_reading_from_sock(tcp::socket& sock)
 		std::string full_msg(buff.data());
 		std::vector<std::string> msgs;
 
+		std::cout << "FULL_MSG: " << full_msg << std::endl;
+
 		//boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
 		//boost::algorithm::split(msgs, full_msg, "\r\n");
 		msgs = split(full_msg, "\r\n");
 		for (auto it = msgs.begin(); it != msgs.end(); ++it) {
-			if (*it != "")
+			if (*it != "") {
 				sock_msgs.push_back(*it);
+				std::cout << "msgs[..] = " << *it << std::endl;
+			}
 		}
 
 		// @TODO:
@@ -130,12 +154,15 @@ void update_sock_msgs(tcp::socket& sock)
 		std::string full_msg(buff.begin(), buff.end());
 		std::vector<std::string> msgs;
 
+		std::cout << "FULL_MSG: " << full_msg << std::endl;
 		//boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
 		//boost::algorithm::split(msgs, full_msg, "\r\n");
 		msgs = split(full_msg, "\r\n");
 		for (auto it = msgs.begin(); it != msgs.end(); ++it) {
-			if (*it != "")
+			if (*it != "") {
 				sock_msgs.push_back(*it);
+				std::cout << "msgs[..] = " << *it << std::endl;
+			}
 		}
 	} catch (...) {
 		throw;
@@ -175,7 +202,7 @@ User query_and_create()
 	return User(nick, user, real);
 }
 
-void pass_user_into_to_server(User this_user, tcp::socket& serv_sock)
+void pass_user_info_to_server(User this_user, tcp::socket& serv_sock)
 {
 	try {
 		// send NICK
@@ -189,8 +216,10 @@ void pass_user_into_to_server(User this_user, tcp::socket& serv_sock)
 		try_writing_to_sock(serv_sock, msg);
 
 		std::string reply = try_reading_from_sock(serv_sock);
-		if (DEBUG)
+		if (DEBUG) {
+			std::cout << "DEBUG: should be confirmation message\n";
 			std::cout << reply << std::endl;
+		}
 		// @TODO: check if reply has correct reply in it.
 	} catch (...) {
 		throw;
@@ -239,15 +268,19 @@ std::string connect_to_channel(tcp::socket& sock)
 		msg  = "JOIN " + channel + "\r\n";
 		try_writing_to_sock(sock, msg);
 
+		// wait for confirmation message from server
 		std::string reply = try_reading_from_sock(sock);
-		if (DEBUG)
+		if (DEBUG) {
+			std::cout << "DEBUG: should be confirmation message\n";
 			std::cout << reply << std::endl;
+		}
 
 		msg  = "\n";
 		msg += "##########################\n";
 		msg += "Successfully connected to " + channel + "\n";
 		std::cout << to_cyan(msg);
 
+		// should get TOPIC
 		reply = try_reading_from_sock(sock);
 		if (DEBUG)
 			std::cout << reply << std::endl;
@@ -258,6 +291,7 @@ std::string connect_to_channel(tcp::socket& sock)
 		msg += parse_topic_msg(reply) + "\n";
 		std::cout << to_cyan(msg);
 
+		// should get LIST of users
 		reply = try_reading_from_sock(sock);
 		if (DEBUG)
 			std::cout << reply << std::endl;
@@ -268,6 +302,7 @@ std::string connect_to_channel(tcp::socket& sock)
 		msg += parse_user_list_msg(reply) + "\n";
 		std::cout << to_cyan(msg);
 
+		// should get END OF NAMES
 		reply = try_reading_from_sock(sock);
 		if (DEBUG)
 			std::cout << reply << std::endl;
@@ -312,28 +347,33 @@ void parse_session_msg(std::string msg)
 		reply += msg + "\n";
 		//retval = std::make_tuple(reply, no_msg);
 		std::cout << reply;
+		throw std::invalid_argument("not parseable message\n");
 	}
 }
 
-void parse_user_input(tcp::socket& sock, std::string msg, std::string channel)
+// return true if need to quit
+bool parse_user_input(tcp::socket& sock, std::string msg, std::string channel)
 {
 	if (msg == "") {
-		return;
+		return false;
 	} else if (msg == "EXIT") {
 		std::string part_msg = "PART " + channel + "\r\n";
 		// ignoring :<part-msg>
 		try_writing_to_sock(sock, part_msg);
+		return true;
 	} else if (msg == "HELP") {
 		std::string to_client;
 		to_client  = "options...\n";
 		to_client += "EXIT: exit the client\n";
 		to_client += "HELP: print this dialog\n";
 		std::cout << to_cyan(to_client);
+		return false;
 	} else {
 		std::string priv_msg;
 		priv_msg  = "PRIVMSG " + channel;
 		priv_msg += " :" + msg + "\r\n";
 		try_writing_to_sock(sock, priv_msg);
+		return false;
 	}
 }
 
@@ -353,6 +393,7 @@ int main(int argc, char **argv)
 	if (serv_ip == "localhost")
 		serv_ip = "127.0.0.1";
 
+	signal(SIGSEGV, handler); // for printing stacktrace
 	try
 	{
 		User this_user = query_and_create();
@@ -367,7 +408,7 @@ int main(int argc, char **argv)
 
 		serv_sock.connect(endpoint);
 
-		pass_user_into_to_server(this_user, serv_sock);
+		pass_user_info_to_server(this_user, serv_sock);
 
 		std::string channel = connect_to_channel(serv_sock);
 		this_user.set_channel(channel);
@@ -388,6 +429,7 @@ int main(int argc, char **argv)
 
 			for (auto it = sock_msgs.begin(); it != sock_msgs.end();
 									++it) {
+				std::cout << "MSG: " << *it << std::endl;
 				parse_session_msg(*it);
 			}
 
@@ -396,7 +438,9 @@ int main(int argc, char **argv)
 			std::cout << to_cyan(this_user.get_nick() + ": ");
 			std::cin >> msg;
 
-			parse_user_input(serv_sock, msg, this_user.get_chan());
+			bool quit = parse_user_input(serv_sock, msg, this_user.get_chan());
+			if (quit)
+				break;
 		}
 
 	}

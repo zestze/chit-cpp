@@ -78,6 +78,8 @@ std::vector<std::string> split_(std::string full_msg, std::string delim);
 // returns iterator
 std::deque<tcp::socket>::iterator get_sock_for_user(Servlet& srvlt, User usr);
 
+std::deque<User> grab_new(Servlet& servlet);
+
 /*
  */
 std::string try_reading(Servlet& servlet, User user);
@@ -95,9 +97,9 @@ void update_end_msgs(Servlet& servlet);
 /*
  * modifies servlet.users, and while grabbing users adds them
  */
-std::deque<User> grab_newusers(Servlet& servlet);
+//std::deque<User> grab_newusers(Servlet& servlet);
 
-void get_newsockets(Servlet& srvlt);
+//void get_newsockets(Servlet& srvlt);
 
 /*
  */

@@ -3,7 +3,7 @@ CC 		= g++
 CXX 		= g++
 INCLUDES 	=
 CFLAGS 		= -g -Wall $(INCLUDES)
-CXXFLAGS 	= -g -Wall $(INCLUDES) -std=c++11 -pthread
+CXXFLAGS 	= -g -Wall $(INCLUDES) -std=c++11 -pthread -rdynamic
 LDFLAGS 	= -g -pthread
 LDLIBS 		= -lboost_system
 

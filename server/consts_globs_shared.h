@@ -56,8 +56,9 @@ extern std::map<
 extern std::deque<tcp::socket> global_socks;
 //std::mutex newusers_lock;
 
-extern std::mutex c_nu_lock; // for chan_newusers
-extern std::mutex g_s_lock; // for global_socks
+extern std::mutex gl_lock; // for both the map and the deque
+//extern std::mutex c_nu_lock; // for chan_newusers
+//extern std::mutex g_s_lock; // for global_socks
 // lock for both chan_newusers and global_socks.
 
 #endif

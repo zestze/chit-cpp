@@ -10,6 +10,25 @@
 
 #include "servlet.h"
 
+// for printing stacktrace
+#include <stdio.h>
+#include <execinfo.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+void handler(int sig) {
+	void *array[10];
+	size_t size;
+
+	size = backtrace(array, 10);
+
+	fprintf(stderr, "Error: signal %d:\n", sig);
+	backtrace_symbols_fd(array, size, STDERR_FILENO);
+	exit(1);
+}
+// for printing backtrace
+
 // grabbed from studiofreya.com
 std::vector<std::string> split_(std::string full_msg, std::string delim)
 {
@@ -96,32 +115,6 @@ void try_writing(Servlet& srvlt, User usr, std::string msg)
 
 void update_end_msgs(Servlet& servlet)
 {
-	//std::deque<tcp::endpoint> read_ends;
-	// note: it is a pair of <endpoint, socket>
-	/*
-	for (auto es_it = servlet.socks.begin(); es_it != servlet.socks.end(); ++es_it) {
-		std::size_t len = es_it->second.available();
-		if (len <= 0)
-			continue;
-		read_ends.push_back(es_it->first);
-
-		tcp::endpoint end = es_it->first;
-		tcp::socket& sock = es_it->second;
-
-		std::vector<char> buff;
-		boost::system::error_code ec;
-		sock.read_some(boost::asio::buffer(buff), ec);
-		std::string full_msg(buff.begin(), buff.end());
-		std::vector<std::string> msgs;
-
-		boost::algorithm::split(msgs, full_msg, boost::is_any_of("\r\n"));
-		for (auto it = msgs.begin(); it != msgs.end(); ++it) {
-			if (*it != "")
-				servlet.end_msgs[end].push_back(*it);
-		}
-	}
-	return read_ends;
-	*/
 	for (auto sock_it = servlet.socks.begin(); sock_it != servlet.socks.end(); ++sock_it) {
 		std::size_t len = sock_it->available();
 		if (len <= 0)
@@ -149,10 +142,10 @@ void update_end_msgs(Servlet& servlet)
 	}
 }
 
-std::deque<User> grab_newusers(Servlet& servlet)
+std::deque<User> grab_new(Servlet& servlet)
 {
-	/*
-	std::unique_lock<std::mutex> lck(newusers_lock);
+	// formerly grab_newusers
+	std::unique_lock<std::mutex> lck(gl_lock);
 	std::string chan = servlet.get_chan();
 	std::deque<User> newusers;
 	for (auto it = chan_newusers[chan].begin(); it != chan_newusers[chan].end(); ++it) {
@@ -160,57 +153,41 @@ std::deque<User> grab_newusers(Servlet& servlet)
 		User new_u = std::get<0>(*it);
 		servlet.add_user(new_u);
 
-		// copy over sock
-		tcp::socket temp(std::move(std::get<1>(*it))); // @TODO: check if move works
-		servlet.end_socks[new_u.get_endpt()];
-		servlet.end_socks[new_u.get_endpt()] = std::move(temp); // @TODO: see above
-
-		// copy over messages
-		servlet.end_msgs[new_u.get_endpt()] = std::get<2>(*it);
-
-		// for later handling of new users
-		newusers.push_back(new_u);
-	}
-
-	// clear the deque of 'newusers' in global list
-	chan_newusers[chan].clear();
-	return newusers;
-	*/
-	std::unique_lock<std::mutex> lck(c_nu_lock);
-	std::string chan = servlet.get_chan();
-	std::deque<User> newusers;
-	for (auto it = chan_newusers[chan].begin(); it != chan_newusers[chan].end(); ++it) {
-		// copy over user
-		User new_u = std::get<0>(*it);
-		servlet.add_user(new_u);
+		std::cout << new_u.print_() << std::endl;
 
 		// copy over messages
 		servlet.end_msgs[new_u.get_endpt()] = std::get<1>(*it);
 
+		for (auto itt = servlet.end_msgs[new_u.get_endpt()].begin();
+				itt != servlet.end_msgs[new_u.get_endpt()].end();
+				++itt) {
+		}
+
 		// for later handling of new users
 		newusers.push_back(new_u);
 	}
-	return newusers;
-}
 
-void get_newsockets(Servlet& srvlt)
-{
-	std::unique_lock<std::mutex> lck(g_s_lock);
+	chan_newusers[chan].clear();
+
+
+	// formerly get_newsockets
 	for (auto sock_it = global_socks.begin(); sock_it != global_socks.end(); ++sock_it) {
+		std::cout << sock_it->remote_endpoint().address().to_string() << std::endl;
 		bool match = false;
-		for (auto usr = srvlt.users.begin(); usr != srvlt.users.end(); ++usr) {
+		for (auto usr = servlet.users.begin(); usr != servlet.users.end(); ++usr) {
 			if (sock_it->remote_endpoint() == usr->get_endpt()) {
 				match = true;
 				break;
 			}
 		}
 		if (match) {
-			srvlt.socks.push_back(std::move(*sock_it)); // @TODO: check if this works?
-			auto prev_it = std::prev(sock_it); // @TODO: check if this works?
+			servlet.socks.push_back(std::move(*sock_it));
+			auto prev_it = std::prev(sock_it);
 			global_socks.erase(sock_it);
 			sock_it = prev_it;
 		}
 	}
+	return newusers;
 }
 
 bool check_user_in(User user, std::deque<User> list_)
@@ -228,23 +205,36 @@ bool check_user_in(User user, std::deque<User> list_)
 void handle_newusers(Servlet& servlet)
 {
 	// @TODO: need to grab sockets and put them into servlet as well.
+	/*
+	std::cout << "grab_newusers\n";
 	std::deque<User> newusers = grab_newusers(servlet);
+	std::cout << "get_newsockets\n";
 	get_newsockets(servlet);
+	*/
+	std::deque<User> newusers = grab_new(servlet);
 	std::deque<User> handled;
 	for (auto it = newusers.begin(); it != newusers.end(); ++it) {
 		User new_user = *it;
+
+		// immediately add user to handled, as a hack to fix the check_user_in
+		// for the currently-being-handled newuser case
+		handled.push_back(new_user);
+		std::cout << new_user.print_() << std::endl;
 		std::string rem_IP = new_user.get_endpt().address().to_string();
 		std::string msg;
 		msg  = new_user.get_nick() + "!" + new_user.get_user() + "@" + rem_IP;
 		msg += " JOIN " + new_user.get_chan() + "\r\n";
 
+		std::cout << "jumping into handle_newusers middle for\n";
 		std::string user_names = "";
-		for (auto it2 = servlet.users.begin(); it2 != servlet.users.end(); ++it) {
+		for (auto it2 = servlet.users.begin(); it2 != servlet.users.end(); ++it2) {
+			std::cout << "in handle_newusers end for\n";
 			// if user is in newusers, but not in handled, it shouldn't
 			// be included in curr list of users, and shouldn't be messsaged
 			// about this new person.
 			if (check_user_in(*it2, newusers) && !check_user_in(*it2, handled))
 				continue;
+			std::cout << "didn't go through continue\n";
 			/*
 			if (std::find(newusers.begin(), newusers.end(), *it2) != newusers.end()
 			&& std::find(handled.begin(), handled.end(), *it2) == handled.end())
@@ -256,11 +246,14 @@ void handle_newusers(Servlet& servlet)
 
 			user_names += "@" + it2->get_nick() + " ";
 		}
-
+		user_names += "@" + it->get_nick();
 		std::string loc_IP;
-		tcp::socket& sock = *get_sock_for_user(servlet, new_user);
+		std::deque<tcp::socket>::iterator temp = get_sock_for_user(servlet, new_user);
+		tcp::socket& sock = *temp;
 
-		loc_IP = sock.local_endpoint().address().to_string();
+		std::cout << "error may be here?\n";
+		loc_IP = sock.local_endpoint().address().to_string(); // @TODO: error is here.
+		std::cout << "error may be here?\n";
 		msg  = loc_IP + " " + RPL_TOPIC + " ";
 		msg += new_user.get_nick() + " " + new_user.get_chan() + " ";
 		msg += ":" + servlet.get_topic() + "\r\n";
@@ -280,8 +273,9 @@ void handle_newusers(Servlet& servlet)
 		try_writing(servlet, new_user, msg);
 
 		// new_user has been handleed, so make sure to put them in that deque
-		handled.push_back(new_user);
+		//handled.push_back(new_user);
 	}
+	std::cout << "done with loop\n";
 
 	// now that info is grabbed, need to handle it.
 }
@@ -289,7 +283,7 @@ void handle_newusers(Servlet& servlet)
 // return TRUE if needs handling
 bool check_newusers(std::string chan)
 {
-	std::unique_lock<std::mutex> lck(c_nu_lock);
+	std::unique_lock<std::mutex> lck(gl_lock);
 	if (chan_newusers.count(chan) && !chan_newusers[chan].empty())
 		return true;
 	else
@@ -317,6 +311,8 @@ void handle_msg(std::string msg, Servlet& servlet, tcp::endpoint end)
 	}
 
 	if (msg.substr(0, 7) == "PRIVMSG") {
+		std::cout << "in privmsg" << std::endl;
+		std::cout << "MSG: " << msg << std::endl;
 		// format read:
 		// PRIVMSG <channel> :<msg>
 		// format to write:
@@ -336,6 +332,8 @@ void handle_msg(std::string msg, Servlet& servlet, tcp::endpoint end)
 			try_writing(servlet, *it, msg);
 		}
 	} else if (msg.substr(0, 4) == "PART") {
+		std::cout << "in part" << std::endl;
+		std::cout << "MSG: " << msg << std::endl;
 		// format read:
 		// PART <channel>
 		// format to write:
@@ -383,6 +381,7 @@ void handle_msg(std::string msg, Servlet& servlet, tcp::endpoint end)
 
 void run(std::string channel)
 {
+	signal(SIGSEGV, handler); // for printing stacktrace
 	try {
 		Servlet servlet(channel);
 		while (!killself) {
@@ -406,6 +405,9 @@ void run(std::string channel)
 		// clean up, don't need to close sockets since map and deque should do
 		// implicitly by destructor call.
 		std::cout << "Thread exiting" << std::endl;
+	} catch (const std::exception& e) {
+		std::cout << "There was an error:" << std::endl;
+		std::cout << e.what() << std::endl;
 	} catch (...) {
 		// @TODO: check if child threads can catch keyboard exceptions etc.
 		// since we want the parent thread to handle that stuff.

@@ -39,6 +39,7 @@ class User
 			_real_name = other._real_name;
 			_password  = other._password;
 			_channel   = other._channel;
+			_endpt     = other._endpt;
 		}
 
 
@@ -54,7 +55,7 @@ class User
 		void set_channel(std::string new_chan) { _channel = new_chan; }
 		void set_endpoint(boost::asio::ip::tcp::endpoint new_e)
 		{
-			endpt = new_e;
+			_endpt = new_e;
 		}
 
 		std::string get_nick() { return _nick; 	   }
@@ -62,7 +63,18 @@ class User
 		std::string get_real() { return _real_name; }
 		std::string get_pass() { return _password;  }
 		std::string get_chan() { return _channel;   }
-		boost::asio::ip::tcp::endpoint get_endpt() { return endpt; }
+		boost::asio::ip::tcp::endpoint get_endpt() { return _endpt; }
+
+		std::string print_()
+		{
+			std::string msg = "";
+			msg += "nick: " + _nick + "\n";
+			msg += "user: " + _user_name + "\n";
+			msg += "real: " + _real_name + "\n";
+			msg += "channel: " + _channel + "\n";
+			msg += "IP: " + _endpt.address().to_string() + "\n";
+			return msg;
+		}
 
 	private:
 		std::string _nick;
@@ -70,7 +82,7 @@ class User
 		std::string _real_name;
 		std::string _password;
 		std::string _channel;
-		boost::asio::ip::tcp::endpoint endpt; // note: remote endpoint.
+		boost::asio::ip::tcp::endpoint _endpt; // note: remote endpoint.
 };
 
 #endif
