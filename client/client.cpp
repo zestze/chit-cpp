@@ -399,7 +399,9 @@ int main(int argc, char **argv)
 			sock_msgs.clear();
 
 			std::cout << to_cyan(this_user.get_nick() + ": ");
-			std::cin >> msg;
+			//std::cin >> msg;
+			getline(std::cin, msg);
+			std::cout << "pass\n";
 
 			bool quit = parse_user_input(serv_sock, msg, this_user.get_chan());
 			if (quit)
