@@ -22,6 +22,8 @@
 #include <stdio.h>
 #include <limits.h>
 
+#define 	BUFF_SIZE 		1024
+
 using boost::asio::ip::tcp;
 
 std::string RESERVED_CHARS[3] = {":", "!", "@"};
@@ -67,6 +69,7 @@ void try_writing_to_sock(tcp::socket& sock, std::string msg)
 		boost::system::error_code ec;
 		boost::asio::write(sock, boost::asio::buffer(msg),
 				boost::asio::transfer_all(), ec);
+		std::cout << "WRITE: " << msg << std::endl;
 		// @TODO: implement proper async write, or have a timeout.
 		// this blocks until all in buffer is transmitted.
 	} catch (...) {
@@ -84,7 +87,7 @@ std::string try_reading_from_sock(tcp::socket& sock)
 			return retval;
 		}
 
-		std::array<char, 128> buff = { };
+		std::array<char, BUFF_SIZE> buff = { };
 		boost::system::error_code ec;
 		sock.read_some(boost::asio::buffer(buff), ec);
 		std::string full_msg(buff.data());
@@ -118,12 +121,14 @@ void update_sock_msgs(tcp::socket& sock)
 	try {
 		std::size_t len = sock.available();
 		if (len <= 0) { // could just put == 0...
+			std::cout << "socket is empty..." << std::endl;
 			return;
 		}
-		std::vector<char> buff;
+		//std::vector<char> buff;
+		std::array<char, BUFF_SIZE> buff = { };
 		boost::system::error_code ec;
 		sock.read_some(boost::asio::buffer(buff), ec);
-		std::string full_msg(buff.begin(), buff.end());
+		std::string full_msg(buff.data());
 		std::vector<std::string> msgs;
 
 		std::cout << "FULL_MSG: " << full_msg << std::endl;
@@ -142,6 +147,11 @@ void update_sock_msgs(tcp::socket& sock)
 std::string to_cyan(std::string msg)
 {
 	return "\033[1;36m" + msg + "\033[0m";
+}
+
+std::string to_magenta(std::string msg)
+{
+	return "\033[1;35m" + msg + "\033[0m";
 }
 
 User query_and_create()
@@ -282,15 +292,15 @@ std::string connect_to_channel(tcp::socket& sock)
 
 void parse_session_msg(std::string msg)
 {
-	std::string reply;
+	std::string to_print;
 	if (msg.find("PRIVMSG") != std::string::npos) {
 		// :<nick>!<user>@<user-ip> PRIVMSG <channel> :<msg>
 		std::size_t found = msg.find("!");
 		std::string nick = msg.substr(1, found - 1); // should work...
 		found = msg.find(":", 1);
 		std::string priv_msg = msg.substr(found + 1, std::string::npos); // should work..
-		reply = nick + ": " + priv_msg + "\n";
-		std::cout << to_cyan(reply);
+		to_print = nick + ": " + priv_msg + "\n";
+		std::cout << to_magenta(to_print);
 	} else if (msg.find("PART") != std::string::npos) {
 		// :<nick>!<user>@<user-ip> PART <channel> [:<parting-msg>]
 		// ignoring [:<parting-msg>] for now
@@ -298,20 +308,21 @@ void parse_session_msg(std::string msg)
 		std::string nick = msg.substr(1, found - 1); // should work..
 		found = msg.find("PART");
 		std::string channel = msg.substr(found + 5, std::string::npos);
-		reply = nick + " LEFT CHANNEL " + channel + "\n";
-		std::cout << to_cyan(reply);
+		to_print = nick + " LEFT CHANNEL " + channel + "\n";
+		std::cout << to_magenta(to_print);
 	} else if (msg.find("JOIN") != std::string::npos) {
 		// <nick>!<user>@<user-ip> JOIN <channel>
 		std::size_t found = msg.find("!");
-		std::string nick = msg.substr(1, found - 1);
+		std::string nick = msg.substr(0, found - 1);
 		found = msg.find("JOIN");
 		std::string channel = msg.substr(found + 5, std::string::npos);
-		reply = nick + " JOINED CHANNEL " + channel + "\n";
-		std::cout << to_cyan(reply);
+		to_print = nick + " JOINED CHANNEL " + channel + "\n";
+		std::cout << to_magenta(to_print);
 	} else {
 		std::string reply  = "ERROR, unrecognized message\n";
 		reply += msg + "\n";
 		std::cout << reply;
+		std::cout << "MSG length: " << msg.size() << std::endl;
 		throw std::invalid_argument("not parseable message\n");
 	}
 }

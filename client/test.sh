@@ -9,7 +9,7 @@ make
 if [ $# -eq 2 ]; then
 	./client "$1" "$2"
 else
-	./client localhost 8080
+	./client localhost 8081
 fi
 
 # clean
