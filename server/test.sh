@@ -9,7 +9,7 @@ make
 if [ $# -eq 1 ]; then
 	./server "$1"
 else
-	./server 8080
+	./server 8081
 fi
 
 # clean

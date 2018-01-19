@@ -10,6 +10,7 @@
 
 #include "servlet.h"
 
+#define 	BUFF_SIZE 		1024
 
 // grabbed from studiofreya.com
 std::vector<std::string> split_(std::string full_msg, std::string delim)
@@ -62,7 +63,7 @@ std::string try_reading(Servlet& servlet, User user)
 		return msg;
 	}
 
-	std::array<char, 128> buff = { };
+	std::array<char, BUFF_SIZE> buff = { };
 	boost::system::error_code ec;
 	sock.read_some(boost::asio::buffer(buff), ec);
 	std::string full_msg(buff.data());
@@ -84,6 +85,7 @@ void try_writing(Servlet& srvlt, User usr, std::string msg)
 	tcp::socket& sock = *get_sock_for_user(srvlt, usr);
 	if (msg.substr(msg.length() - 2, std::string::npos) != "\r\n")
 		throw std::invalid_argument("All IRC msgs need \\r\\n suffix");
+	std::cout << "WRITE: " << msg << std::endl;
 	boost::system::error_code ec;
 	boost::asio::write(sock, boost::asio::buffer(msg),
 			boost::asio::transfer_all(), ec);
@@ -101,7 +103,7 @@ void update_end_msgs(Servlet& servlet)
 		tcp::socket& sock = *sock_it;
 		tcp::endpoint end = sock.remote_endpoint();
 
-		std::array<char, 128> buff = { };
+		std::array<char, BUFF_SIZE> buff = { };
 		boost::system::error_code ec;
 		sock.read_some(boost::asio::buffer(buff), ec);
 		std::string full_msg(buff.data());
@@ -118,34 +120,34 @@ void update_end_msgs(Servlet& servlet)
 
 std::deque<User> grab_new(Servlet& servlet)
 {
-	// formerly grab_newusers
+	// formerly grab_newusers,
+	// get the new user, and their messages read from socket thus far
 	std::unique_lock<std::mutex> lck(gl_lock);
 	std::string chan = servlet.get_chan();
 	std::deque<User> newusers;
-	for (auto it = chan_newusers[chan].begin(); it != chan_newusers[chan].end(); ++it) {
+	for (auto tup_it = chan_newusers[chan].begin(); tup_it != chan_newusers[chan].end(); ++tup_it) {
 		// copy over user
-		User new_u = std::get<0>(*it);
+		User new_u = std::get<0>(*tup_it);
 		servlet.add_user(new_u);
 
 		std::cout << new_u.print_() << std::endl;
 
 		// copy over messages
-		servlet.end_msgs[new_u.get_endpt()] = std::get<1>(*it);
-
-		for (auto itt = servlet.end_msgs[new_u.get_endpt()].begin();
-				itt != servlet.end_msgs[new_u.get_endpt()].end();
-				++itt) {
+		//servlet.end_msgs[new_u.get_endpt()] = std::get<1>(*tup_it);
+		std::deque<std::string> temp_msgs(std::get<1>(*tup_it));
+		servlet.end_msgs[new_u.get_endpt()]; // initialize
+		for (auto msg = temp_msgs.begin(); msg != temp_msgs.end(); ++msg) {
+			servlet.end_msgs[new_u.get_endpt()].push_back(*msg);
 		}
 
 		// for later handling of new users
 		newusers.push_back(new_u);
 	}
-
 	chan_newusers[chan].clear();
 
 
 	// formerly get_newsockets
-	for (auto sock_it = global_socks.begin(); sock_it != global_socks.end(); ++sock_it) {
+	for (auto sock_it = global_socks.begin(); sock_it != global_socks.end(); ) {
 		std::cout << sock_it->remote_endpoint().address().to_string() << std::endl;
 		bool match = false;
 		for (auto usr = servlet.users.begin(); usr != servlet.users.end(); ++usr) {
@@ -154,11 +156,12 @@ std::deque<User> grab_new(Servlet& servlet)
 				break;
 			}
 		}
+
 		if (match) {
 			servlet.socks.push_back(std::move(*sock_it));
-			auto prev_it = std::prev(sock_it);
-			global_socks.erase(sock_it);
-			sock_it = prev_it;
+			sock_it = global_socks.erase(sock_it);
+		} else {
+			++sock_it;
 		}
 	}
 	return newusers;
@@ -178,15 +181,16 @@ bool check_user_in(User user, std::deque<User> list_)
 
 void handle_newusers(Servlet& servlet)
 {
-	std::deque<User> newusers = grab_new(servlet);
+	std::deque<User> newusers(grab_new(servlet));
 	std::deque<User> handled;
 	for (auto it = newusers.begin(); it != newusers.end(); ++it) {
-		User new_user = *it;
+		User new_user(*it); // won't use it after this
 
 		// immediately add user to handled, as a hack to fix the check_user_in
 		// for the currently-being-handled newuser case
 		handled.push_back(new_user);
 		std::cout << new_user.print_() << std::endl;
+
 		std::string rem_IP = new_user.get_endpt().address().to_string();
 		std::string msg;
 		msg  = new_user.get_nick() + "!" + new_user.get_user() + "@" + rem_IP;
@@ -195,18 +199,18 @@ void handle_newusers(Servlet& servlet)
 		std::cout << "jumping into handle_newusers middle for\n";
 		std::string user_names = "";
 		for (auto it2 = servlet.users.begin(); it2 != servlet.users.end(); ++it2) {
+			User serv_user(*it2);
 			std::cout << "in handle_newusers end for\n";
 			// if user is in newusers, but not in handled, it shouldn't
 			// be included in curr list of users, and shouldn't be messsaged
 			// about this new person.
-			if (check_user_in(*it2, newusers) && !check_user_in(*it2, handled))
+			if (check_user_in(serv_user, newusers) && !check_user_in(serv_user, handled))
 				continue;
 			std::cout << "didn't go through continue\n";
-			try_writing(servlet, *it2, msg);
+			try_writing(servlet, serv_user, msg);
 
-			user_names += "@" + it2->get_nick() + " ";
+			user_names += "@" + serv_user.get_nick() + " ";
 		}
-		user_names += "@" + it->get_nick();
 		std::string loc_IP;
 		std::deque<tcp::socket>::iterator temp = get_sock_for_user(servlet, new_user);
 		tcp::socket& sock = *temp;
@@ -280,7 +284,7 @@ void handle_msg(std::string msg, Servlet& servlet, tcp::endpoint end)
 			if (it->get_endpt() == end)
 				continue;
 			// broadcast PRIVMSG to members besides one who sent it
-			try_writing(servlet, *it, msg);
+			try_writing(servlet, *it, reply);
 		}
 	} else if (msg.substr(0, 4) == "PART") {
 		std::cout << "in part" << std::endl;
@@ -297,7 +301,7 @@ void handle_msg(std::string msg, Servlet& servlet, tcp::endpoint end)
 		for (auto it = servlet.users.begin(); it != servlet.users.end(); ++it) {
 			if (it->get_endpt() == end)
 				continue;
-			try_writing(servlet, *it, msg);
+			try_writing(servlet, *it, reply);
 		}
 
 		// remove user from users deque
@@ -311,9 +315,17 @@ void handle_msg(std::string msg, Servlet& servlet, tcp::endpoint end)
 
 		// get rid of deque associated with socket
 		servlet.end_msgs.erase(end);
+
 		// get rid of socket
 		for (auto it = servlet.socks.begin(); it != servlet.socks.end(); ++it) {
-			if (it->remote_endpoint() == end) {
+			boost::system::error_code ec;
+			tcp::endpoint this_end = it->remote_endpoint(ec);
+			if (ec) {
+				// error thrown, so socket was closed and this is one
+				// to get rid of.
+				servlet.socks.erase(it);
+				break;
+			} if (this_end == end) {
 				servlet.socks.erase(it); // calling erase like this should
 				// implicitly close socket
 				break;
@@ -342,9 +354,12 @@ void run(std::string channel)
 			// Handle end_msgs
 			for (auto em_it = servlet.end_msgs.begin(); em_it != servlet.end_msgs.end();
 					++em_it) {
-				for (auto msg = em_it->second.begin(); msg != em_it->second.end();
+				tcp::endpoint end(em_it->first);
+				std::deque<std::string> msgs(em_it->second);
+
+				for (auto msg = msgs.begin(); msg != msgs.end();
 						++msg) {
-					handle_msg(*msg, servlet, em_it->first);
+					handle_msg(*msg, servlet, end);
 				}
 				em_it->second.clear();
 			}

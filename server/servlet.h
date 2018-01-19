@@ -41,10 +41,12 @@ class Servlet {
 			_topic = other._topic;
 		}
 
-		// DON'T USER
+		// DON'T USE LET COMPILER GENERATE DEFAULT DESTRUCTOR
+		/*
 		~Servlet()
 		{
 		}
+		*/
 
 		// member modifiers
 		void set_topic(std::string new_t) { _topic = new_t; }

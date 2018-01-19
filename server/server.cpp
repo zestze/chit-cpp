@@ -11,6 +11,8 @@
 
 #include "server.h"
 
+#define 	BUFF_SIZE 		1024
+
 /*      	INIT GLOBALS 		*/
 std::string RPL_WELCOME;
 std::string RPL_TOPIC;
@@ -64,7 +66,7 @@ std::string try_reading_from_sock(tcp::socket& sock)
 		return msg;
 	}
 
-	std::array<char, 128> buff = { };
+	std::array<char, BUFF_SIZE> buff = { };
 	boost::system::error_code ec;
 	std::size_t len = sock.read_some(boost::asio::buffer(buff), ec);
 	if (len == 0)
@@ -195,7 +197,13 @@ int main(int argc, char **argv)
 
 			client.set_endpoint(sock.remote_endpoint());
 
-			std::deque<std::string> temp_msgs = end_msgs[sock.remote_endpoint()];
+			//std::deque<std::string> temp_msgs = end_msgs[sock.remote_endpoint()];
+			std::deque<std::string> temp_msgs;
+			for (auto msg = end_msgs[sock.remote_endpoint()].begin();
+					msg != end_msgs[sock.remote_endpoint()].end();
+					++msg) {
+				temp_msgs.push_back(*msg);
+			}
 			end_msgs.erase(sock.remote_endpoint());
 
 			{
