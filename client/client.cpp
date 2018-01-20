@@ -16,6 +16,7 @@
 #include <tuple> // not needed
 #include "user.h"
 #include "client.h"
+#include "../libs/sockio.h"
 
 #include <unistd.h>
 #include <pwd.h>
@@ -33,6 +34,7 @@ std::deque<std::string> sock_msgs;
 bool DEBUG = false;
 //bool DEBUG = true;
 
+/*
 // grabbed from studiofreya.com
 std::vector<std::string> split(std::string full_msg, std::string delim)
 {
@@ -148,6 +150,22 @@ void update_sock_msgs(tcp::socket& sock)
 		throw;
 	}
 }
+*/
+
+std::string try_reading(tcp::socket& sock)
+{
+	return try_reading_from_sock(sock, sock_msgs);
+}
+
+void try_writing(tcp::socket& sock, std::string msg)
+{
+	try_writing_to_sock(sock, msg);
+}
+
+void update(tcp::socket& sock)
+{
+	update_sockmsgs(sock, sock_msgs);
+}
 
 std::string to_cyan(std::string msg)
 {
@@ -192,15 +210,15 @@ void pass_user_info_to_server(User this_user, tcp::socket& serv_sock)
 	try {
 		// send NICK
 		std::string msg = "NICK " + this_user.get_nick() + "\r\n";
-		try_writing_to_sock(serv_sock, msg);
+		try_writing(serv_sock, msg);
 		// write to socket
 
 		// send USER; asterisks for ignored fields
 		msg  = "USER " + this_user.get_user() + " * * :";
 		msg += this_user.get_real() + "\r\n";
-		try_writing_to_sock(serv_sock, msg);
+		try_writing(serv_sock, msg);
 
-		std::string reply = try_reading_from_sock(serv_sock);
+		std::string reply = try_reading(serv_sock);
 		if (DEBUG) {
 			std::cout << "DEBUG: should be confirmation message\n";
 			std::cout << reply << std::endl;
@@ -214,8 +232,8 @@ void pass_user_info_to_server(User this_user, tcp::socket& serv_sock)
 std::string parse_topic_msg(std::string msg)
 {
 	std::string new_msg = "";
-	std::vector<std::string> parts;
-	parts = split(msg, ":");
+	std::deque<std::string> parts;
+	parts = split_(msg, ":");
 	for (auto it = parts.begin(); it != parts.end(); ++it) {
 		if (it == parts.begin())
 			continue;
@@ -248,10 +266,10 @@ std::string connect_to_channel(tcp::socket& sock)
 			channel = "#" + channel;
 
 		msg  = "JOIN " + channel + "\r\n";
-		try_writing_to_sock(sock, msg);
+		try_writing(sock, msg);
 
 		// wait for confirmation message from server
-		std::string reply = try_reading_from_sock(sock);
+		std::string reply = try_reading(sock);
 		if (DEBUG) {
 			std::cout << "DEBUG: should be confirmation message\n";
 			std::cout << reply << std::endl;
@@ -263,7 +281,7 @@ std::string connect_to_channel(tcp::socket& sock)
 		std::cout << to_cyan(msg);
 
 		// should get TOPIC
-		reply = try_reading_from_sock(sock);
+		reply = try_reading(sock);
 		if (DEBUG)
 			std::cout << reply << std::endl;
 
@@ -274,7 +292,7 @@ std::string connect_to_channel(tcp::socket& sock)
 		std::cout << to_cyan(msg);
 
 		// should get LIST of users
-		reply = try_reading_from_sock(sock);
+		reply = try_reading(sock);
 		if (DEBUG)
 			std::cout << reply << std::endl;
 
@@ -285,7 +303,7 @@ std::string connect_to_channel(tcp::socket& sock)
 		std::cout << to_cyan(msg);
 
 		// should get END OF NAMES
-		reply = try_reading_from_sock(sock);
+		reply = try_reading(sock);
 		if (DEBUG)
 			std::cout << reply << std::endl;
 
@@ -340,7 +358,7 @@ bool parse_user_input(tcp::socket& sock, std::string msg, std::string channel)
 	} else if (msg == "EXIT") {
 		std::string part_msg = "PART " + channel + "\r\n";
 		// ignoring :<part-msg>
-		try_writing_to_sock(sock, part_msg);
+		try_writing(sock, part_msg);
 		return true;
 	} else if (msg == "HELP") {
 		std::string to_client;
@@ -353,7 +371,7 @@ bool parse_user_input(tcp::socket& sock, std::string msg, std::string channel)
 		std::string priv_msg;
 		priv_msg  = "PRIVMSG " + channel;
 		priv_msg += " :" + msg + "\r\n";
-		try_writing_to_sock(sock, priv_msg);
+		try_writing(sock, priv_msg);
 		return false;
 	}
 }
@@ -404,7 +422,7 @@ int main(int argc, char **argv)
 		std::cout << to_cyan(msg);
 
 		for (;;) {
-			update_sock_msgs(serv_sock);
+			update(serv_sock);
 
 			for (auto it = sock_msgs.begin(); it != sock_msgs.end();
 									++it) {

@@ -10,6 +10,7 @@
  */
 
 #include "server.h"
+#include "../libs/sockio.h"
 
 #define 	BUFF_SIZE 		1024
 
@@ -32,6 +33,7 @@ void signal_handler(int signal)
 	killself = true;
 }
 
+/*
 // grabbed from studiofreya.com
 std::vector<std::string> split(std::string full_msg, std::string delim)
 {
@@ -60,10 +62,17 @@ std::vector<std::string> split(std::string full_msg, std::string delim)
 	} while (endpos != npos);
 	return msgs;
 }
+*/
 
 
-std::string try_reading_from_sock(tcp::socket& sock)
+std::string try_reading(tcp::socket& sock)
 {
+	tcp::endpoint end = sock.remote_endpoint();
+	if (!end_msgs.count(end))
+		end_msgs[end]; // instantiate bc i'm nervous
+	std::deque<std::string>& sock_msgs = end_msgs[end];
+	return try_reading_from_sock(sock, sock_msgs);
+	/*
 	tcp::endpoint end = sock.remote_endpoint();
 	if (end_msgs.count(end) && !end_msgs[end].empty()) {
 		std::string msg = end_msgs[end].front();
@@ -99,8 +108,15 @@ std::string try_reading_from_sock(tcp::socket& sock)
 	std::string msg = end_msgs[end].front();
 	end_msgs[end].pop_front();
 	return msg;
+	*/
 }
 
+void try_writing(tcp::socket& sock, std::string msg)
+{
+	try_writing_to_sock(sock, msg);
+}
+
+/*
 void try_writing_to_sock(tcp::socket& sock, std::string msg)
 {
 	if (msg.substr(msg.length() - 2, std::string::npos) != "\r\n")
@@ -111,22 +127,25 @@ void try_writing_to_sock(tcp::socket& sock, std::string msg)
 	// @TODO: implement proper async write, or have a timeout.
 	// this blocks until all in buffer is transmitted.
 }
+*/
 
 User register_session(tcp::socket& sock)
 {
-	std::string msg = try_reading_from_sock(sock);
+	std::string msg = try_reading(sock);
 	// "NICK <nick>"
 	std::string nick = msg.substr(5, std::string::npos);
 
-	msg = try_reading_from_sock(sock);
+	msg = try_reading(sock);
 	// "USER <user-name> * * :<real-name>"
 	std::cout << "MSG: " << msg << std::endl;
-	std::deque<std::string> parts;
+	std::deque<std::string> parts = split_(msg, " * * :");
+	/*
 	std::vector<std::string> msgs;
-	msgs = split(msg, " * * :");
+	msgs = split_(msg, " * * :");
 	for (auto msg = msgs.begin(); msg != msgs.end(); ++msg) {
 		parts.push_back(*msg);
 	}
+	*/
 
 	for (auto it = parts.begin(); it != parts.end(); ++it) {
 		std::cout << "parts[..] = " << *it << std::endl;
@@ -147,14 +166,14 @@ User register_session(tcp::socket& sock)
 	msg  = loc_IP + " " + RPL_WELCOME + " " + nick + " :Welcome to";
 	msg += " the Internet Relay Network " + nick + "!" + user_name;
 	msg += "@" + rem_IP + "\r\n";
-	try_writing_to_sock(sock, msg);
+	try_writing(sock, msg);
 
 	return client;
 }
 
 std::string get_channel_name(tcp::socket& sock)
 {
-	std::string msg = try_reading_from_sock(sock);
+	std::string msg = try_reading(sock);
 	std::string channel = msg.substr(5, std::string::npos);
 	return channel;
 }

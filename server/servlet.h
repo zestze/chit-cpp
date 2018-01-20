@@ -57,18 +57,19 @@ class Servlet {
 		std::string get_topic() { return _topic; }
 		void add_user(User new_u) { users.push_back(new_u); }
 
+		// public data
 		std::map<tcp::endpoint, std::deque<std::string>> end_msgs;
-
 		std::deque<User> users;
-
 		std::deque<tcp::socket> socks;
+
+		// formerly not member functions
 
 	private:
 		std::string _channel_name;
 		std::string _topic;
 };
 
-std::vector<std::string> split_(std::string full_msg, std::string delim);
+//std::vector<std::string> split_(std::string full_msg, std::string delim);
 
 // returns iterator
 std::deque<tcp::socket>::iterator get_sock_for_user(Servlet& srvlt, User usr);

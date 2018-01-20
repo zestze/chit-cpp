@@ -33,11 +33,13 @@ std::vector<std::string> split(std::string full_msg, std::string delim);
 
 /*
  */
-std::string try_reading_from_sock(tcp::socket& sock);
+//std::string try_reading_from_sock(tcp::socket& sock);
+std::string try_reading(tcp::socket& sock);
 
 /*
  */
-void try_writing_to_sock(tcp::socket& sock, std::string msg);
+//void try_writing_to_sock(tcp::socket& sock, std::string msg);
+void try_writing(tcp::socket& sock, std::string msg);
 
 /*
  */

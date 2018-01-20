@@ -9,10 +9,12 @@
  */
 
 #include "servlet.h"
+#include "../libs/sockio.h"
 
 #define 	BUFF_SIZE 		1024
 
 // grabbed from studiofreya.com
+/*
 std::vector<std::string> split_(std::string full_msg, std::string delim)
 {
 	std::vector<std::string> msgs;
@@ -40,6 +42,7 @@ std::vector<std::string> split_(std::string full_msg, std::string delim)
 	} while (endpos != npos);
 	return msgs;
 }
+*/
 
 // returns iterator
 std::deque<tcp::socket>::iterator get_sock_for_user(Servlet& srvlt, User usr)
@@ -54,6 +57,13 @@ std::deque<tcp::socket>::iterator get_sock_for_user(Servlet& srvlt, User usr)
 
 std::string try_reading(Servlet& servlet, User user)
 {
+	tcp::endpoint end = user.get_endpt();
+	tcp::socket& sock = *get_sock_for_user(servlet, user);
+	if (!servlet.end_msgs.count(end))
+		servlet.end_msgs[end]; // instantiate because i'm a paranoid boy
+	std::deque<std::string>& sock_msgs = servlet.end_msgs[end];
+	return try_reading_from_sock(sock, sock_msgs);
+	/*
 	tcp::endpoint end = user.get_endpt();
 	tcp::socket& sock = *get_sock_for_user(servlet, user);
 
@@ -78,11 +88,14 @@ std::string try_reading(Servlet& servlet, User user)
 	std::string msg = servlet.end_msgs[end].front();
 	servlet.end_msgs[end].pop_front();
 	return msg;
+	*/
 }
 
 void try_writing(Servlet& srvlt, User usr, std::string msg)
 {
 	tcp::socket& sock = *get_sock_for_user(srvlt, usr);
+	try_writing_to_sock(sock, msg);
+	/*
 	if (msg.substr(msg.length() - 2, std::string::npos) != "\r\n")
 		throw std::invalid_argument("All IRC msgs need \\r\\n suffix");
 	std::cout << "WRITE: " << msg << std::endl;
@@ -91,10 +104,20 @@ void try_writing(Servlet& srvlt, User usr, std::string msg)
 			boost::asio::transfer_all(), ec);
 	// @TODO: implement proper async write, or have a timeout.
 	// this blocks until all in buffer is transmitted.
+	// */
 }
 
 void update_end_msgs(Servlet& servlet)
 {
+	for (auto sock_it = servlet.socks.begin(); sock_it != servlet.socks.end(); ++sock_it) {
+		tcp::socket& sock = *sock_it;
+		tcp::endpoint end = sock.remote_endpoint();
+		if (!servlet.end_msgs.count(end))
+			servlet.end_msgs[end]; // instantiate because I'm a paranoid boy
+		std::deque<std::string>& sock_msgs = servlet.end_msgs[end];
+		update_sockmsgs(sock, sock_msgs);
+	}
+	/*
 	for (auto sock_it = servlet.socks.begin(); sock_it != servlet.socks.end(); ++sock_it) {
 		std::size_t len = sock_it->available();
 		if (len <= 0)
@@ -116,6 +139,7 @@ void update_end_msgs(Servlet& servlet)
 		}
 
 	}
+	*/
 }
 
 std::deque<User> grab_new(Servlet& servlet)

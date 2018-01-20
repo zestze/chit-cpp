@@ -1,2 +1,5 @@
 *.swp*
 *.o
+server
+client
+*.a
