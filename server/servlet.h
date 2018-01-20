@@ -80,50 +80,16 @@ class Servlet {
 
 		void handle_msg(std::string msg, tcp::endpoint end);
 
-		// public data
+		void handle_endmsgs();
+
+	private:
 		std::map<tcp::endpoint, std::deque<std::string>> _end_msgs;
 		std::deque<User> _users;
 		std::deque<tcp::socket> _socks;
-	private:
 		std::string _channel_name;
 		std::string _topic;
 };
 
-// returns iterator
-//std::deque<tcp::socket>::iterator get_sock_for_user(Servlet& srvlt, User usr);
-
-//std::deque<User> grab_new(Servlet& servlet);
-
-/*
- */
-//std::string try_reading(Servlet& servlet, User user);
-
-/*
- */
-//void try_writing(Servlet& srvlt, User usr, std::string msg);
-
-/*
- */
-//void update_end_msgs(Servlet& servlet);
-
-/*
- */
-//void handle_newusers(Servlet& servlet);
-
-/*
- */
-//bool check_newusers(std::string chan);
-
-/*
- */
-//bool check_end_msgs(Servlet& servlet);
-
-/*
- */
-//void handle_msg(std::string msg, Servlet& servlet, tcp::endpoint end);
-
-/*
- */
 void run(std::string channel);
 
 #endif
