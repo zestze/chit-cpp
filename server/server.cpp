@@ -26,6 +26,12 @@ std::deque<tcp::socket> global_socks;
 std::mutex gl_lock;
 /*      	INIT GLOBALS 		*/
 
+void signal_handler(int signal)
+{
+	//std::cout << "SIGNAL recvd: " << signal << std::endl;
+	killself = true;
+}
+
 // grabbed from studiofreya.com
 std::vector<std::string> split(std::string full_msg, std::string delim)
 {
@@ -56,7 +62,6 @@ std::vector<std::string> split(std::string full_msg, std::string delim)
 }
 
 
-// @TODO: changed part of this function, but didn't finish with changes.
 std::string try_reading_from_sock(tcp::socket& sock)
 {
 	tcp::endpoint end = sock.remote_endpoint();
@@ -231,6 +236,7 @@ int main(int argc, char **argv)
 	catch (...)
 	{
 		std::cout << "Unrecognized error" << std::endl;
+		killself = true;
 		for (auto it = threads.begin(); it != threads.end(); ++it)
 			it->second.join();
 		return -1;

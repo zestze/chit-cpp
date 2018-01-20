@@ -30,7 +30,8 @@ std::string RESERVED_CHARS[3] = {":", "!", "@"};
 
 std::deque<std::string> sock_msgs;
 
-bool DEBUG = true;
+bool DEBUG = false;
+//bool DEBUG = true;
 
 // grabbed from studiofreya.com
 std::vector<std::string> split(std::string full_msg, std::string delim)
@@ -69,7 +70,8 @@ void try_writing_to_sock(tcp::socket& sock, std::string msg)
 		boost::system::error_code ec;
 		boost::asio::write(sock, boost::asio::buffer(msg),
 				boost::asio::transfer_all(), ec);
-		std::cout << "WRITE: " << msg << std::endl;
+		if (DEBUG)
+			std::cout << "WRITE: " << msg << std::endl;
 		// @TODO: implement proper async write, or have a timeout.
 		// this blocks until all in buffer is transmitted.
 	} catch (...) {
@@ -93,13 +95,15 @@ std::string try_reading_from_sock(tcp::socket& sock)
 		std::string full_msg(buff.data());
 		std::vector<std::string> msgs;
 
-		std::cout << "FULL_MSG: " << full_msg << std::endl;
+		if (DEBUG)
+			std::cout << "READ FULL_MSG: " << full_msg << std::endl;
 
 		msgs = split(full_msg, "\r\n");
 		for (auto it = msgs.begin(); it != msgs.end(); ++it) {
 			if (*it != "") {
 				sock_msgs.push_back(*it);
-				std::cout << "msgs[..] = " << *it << std::endl;
+				if (DEBUG)
+					std::cout << "msg[..] = " << *it << std::endl;
 			}
 		}
 
@@ -121,7 +125,6 @@ void update_sock_msgs(tcp::socket& sock)
 	try {
 		std::size_t len = sock.available();
 		if (len <= 0) { // could just put == 0...
-			std::cout << "socket is empty..." << std::endl;
 			return;
 		}
 		//std::vector<char> buff;
@@ -131,12 +134,14 @@ void update_sock_msgs(tcp::socket& sock)
 		std::string full_msg(buff.data());
 		std::vector<std::string> msgs;
 
-		std::cout << "FULL_MSG: " << full_msg << std::endl;
+		if (DEBUG)
+			std::cout << "FULL_MSG: " << full_msg << std::endl;
 		msgs = split(full_msg, "\r\n");
 		for (auto it = msgs.begin(); it != msgs.end(); ++it) {
 			if (*it != "") {
 				sock_msgs.push_back(*it);
-				std::cout << "msgs[..] = " << *it << std::endl;
+				if (DEBUG)
+					std::cout << "msgs[..] = " << *it << std::endl;
 			}
 		}
 	} catch (...) {
@@ -319,11 +324,11 @@ void parse_session_msg(std::string msg)
 		to_print = nick + " JOINED CHANNEL " + channel + "\n";
 		std::cout << to_magenta(to_print);
 	} else {
-		std::string reply  = "ERROR, unrecognized message\n";
+		std::string reply  = "ERROR, unrecognized message or buffer overflow\n";
 		reply += msg + "\n";
 		std::cout << reply;
 		std::cout << "MSG length: " << msg.size() << std::endl;
-		throw std::invalid_argument("not parseable message\n");
+		throw std::invalid_argument("not parseable message or buffer overflow\n");
 	}
 }
 
@@ -403,7 +408,8 @@ int main(int argc, char **argv)
 
 			for (auto it = sock_msgs.begin(); it != sock_msgs.end();
 									++it) {
-				std::cout << "MSG: " << *it << std::endl;
+				if (DEBUG)
+					std::cout << "MSG: " << *it << std::endl;
 				parse_session_msg(*it);
 			}
 
@@ -412,7 +418,6 @@ int main(int argc, char **argv)
 			std::cout << to_cyan(this_user.get_nick() + ": ");
 			//std::cin >> msg;
 			getline(std::cin, msg);
-			std::cout << "pass\n";
 
 			bool quit = parse_user_input(serv_sock, msg, this_user.get_chan());
 			if (quit)

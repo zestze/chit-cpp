@@ -13,6 +13,7 @@
 #include <deque>
 #include <array>
 #include <map>
+#include <csignal>
 #include <boost/algorithm/string.hpp>
 
 #include "user.h"
