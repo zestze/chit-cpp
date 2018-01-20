@@ -55,54 +55,72 @@ class Servlet {
 		// member accessors
 		std::string get_chan() { return _channel_name; }
 		std::string get_topic() { return _topic; }
-		void add_user(User new_u) { users.push_back(new_u); }
-
-		// public data
-		std::map<tcp::endpoint, std::deque<std::string>> end_msgs;
-		std::deque<User> users;
-		std::deque<tcp::socket> socks;
+		void add_user(User new_u) { _users.push_back(new_u); }
 
 		// formerly not member functions
+		std::deque<tcp::socket>::iterator get_sock_for_user(User user);
 
+		std::deque<User> grab_new();
+
+		std::string try_reading(User user);
+
+		void try_writing(User user, std::string msg);
+
+		void update_endmsgs();
+
+		void handle_newusers();
+
+		bool check_user_in(User user, std::deque<User> deq);
+
+		// return TRUE if needs handling
+		bool check_newusers();
+
+		// return TRUE if needs handling
+		bool check_endmsgs();
+
+		void handle_msg(std::string msg, tcp::endpoint end);
+
+		// public data
+		std::map<tcp::endpoint, std::deque<std::string>> _end_msgs;
+		std::deque<User> _users;
+		std::deque<tcp::socket> _socks;
 	private:
 		std::string _channel_name;
 		std::string _topic;
 };
 
-//std::vector<std::string> split_(std::string full_msg, std::string delim);
-
 // returns iterator
-std::deque<tcp::socket>::iterator get_sock_for_user(Servlet& srvlt, User usr);
+//std::deque<tcp::socket>::iterator get_sock_for_user(Servlet& srvlt, User usr);
 
-std::deque<User> grab_new(Servlet& servlet);
-
-/*
- */
-std::string try_reading(Servlet& servlet, User user);
+//std::deque<User> grab_new(Servlet& servlet);
 
 /*
  */
-void try_writing(Servlet& srvlt, User usr, std::string msg);
+//std::string try_reading(Servlet& servlet, User user);
 
 /*
  */
-void update_end_msgs(Servlet& servlet);
+//void try_writing(Servlet& srvlt, User usr, std::string msg);
 
 /*
  */
-void handle_newusers(Servlet& servlet);
+//void update_end_msgs(Servlet& servlet);
 
 /*
  */
-bool check_newusers(std::string chan);
+//void handle_newusers(Servlet& servlet);
 
 /*
  */
-bool check_end_msgs(Servlet& servlet);
+//bool check_newusers(std::string chan);
 
 /*
  */
-void handle_msg(std::string msg, Servlet& servlet, tcp::endpoint end);
+//bool check_end_msgs(Servlet& servlet);
+
+/*
+ */
+//void handle_msg(std::string msg, Servlet& servlet, tcp::endpoint end);
 
 /*
  */

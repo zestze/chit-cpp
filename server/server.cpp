@@ -29,41 +29,9 @@ std::mutex gl_lock;
 
 void signal_handler(int signal)
 {
-	//std::cout << "SIGNAL recvd: " << signal << std::endl;
-	killself = true;
+	if (signal)
+		killself = true;
 }
-
-/*
-// grabbed from studiofreya.com
-std::vector<std::string> split(std::string full_msg, std::string delim)
-{
-	std::vector<std::string> msgs;
-	const auto npos = std::string::npos;
-	const auto delim_size = delim.size();
-	std::size_t offset = 0;
-	std::size_t endpos = 0;
-	std::size_t len = 0;
-
-	do {
-		endpos = full_msg.find(delim, offset);
-		std::string temp;
-
-		if (endpos != npos) {
-			len = endpos - offset;
-			temp = full_msg.substr(offset, len);
-			msgs.push_back(temp);
-
-			offset = endpos + delim_size;
-		} else {
-			temp = full_msg.substr(offset);
-			msgs.push_back(temp);
-			break;
-		}
-	} while (endpos != npos);
-	return msgs;
-}
-*/
-
 
 std::string try_reading(tcp::socket& sock)
 {
@@ -72,62 +40,12 @@ std::string try_reading(tcp::socket& sock)
 		end_msgs[end]; // instantiate bc i'm nervous
 	std::deque<std::string>& sock_msgs = end_msgs[end];
 	return try_reading_from_sock(sock, sock_msgs);
-	/*
-	tcp::endpoint end = sock.remote_endpoint();
-	if (end_msgs.count(end) && !end_msgs[end].empty()) {
-		std::string msg = end_msgs[end].front();
-		end_msgs[end].pop_front();
-		return msg;
-	}
-
-	std::array<char, BUFF_SIZE> buff = { };
-	boost::system::error_code ec;
-	std::size_t len = sock.read_some(boost::asio::buffer(buff), ec);
-	if (len == 0)
-		std::cout << "Empty Read" << std::endl;
-	if (ec == boost::asio::error::eof) {
-		std::cout << "Socket closed" << std::endl;
-	} else if (ec) {
-		std::cout << "Other error during Read" << std::endl;
-		throw boost::system::system_error(ec);
-	}
-
-	std::string full_msg(buff.data());
-	std::cout << "FULL_MSG: " << full_msg << std::endl;
-	std::vector<std::string> msgs;
-
-	msgs = split(full_msg, "\r\n");
-	for (auto it = msgs.begin(); it != msgs.end(); ++it) {
-		if (*it != "")
-			end_msgs[end].push_back(*it);
-	}
-
-	// @TODO:
-	// honestly can grab first thing from adding in for loop
-	// don't add, just return. Will be smoother.
-	std::string msg = end_msgs[end].front();
-	end_msgs[end].pop_front();
-	return msg;
-	*/
 }
 
 void try_writing(tcp::socket& sock, std::string msg)
 {
 	try_writing_to_sock(sock, msg);
 }
-
-/*
-void try_writing_to_sock(tcp::socket& sock, std::string msg)
-{
-	if (msg.substr(msg.length() - 2, std::string::npos) != "\r\n")
-		throw std::invalid_argument("All IRC msgs need \\r\\n suffix");
-	boost::system::error_code ec;
-	boost::asio::write(sock, boost::asio::buffer(msg),
-			boost::asio::transfer_all(), ec);
-	// @TODO: implement proper async write, or have a timeout.
-	// this blocks until all in buffer is transmitted.
-}
-*/
 
 User register_session(tcp::socket& sock)
 {
@@ -139,13 +57,6 @@ User register_session(tcp::socket& sock)
 	// "USER <user-name> * * :<real-name>"
 	std::cout << "MSG: " << msg << std::endl;
 	std::deque<std::string> parts = split_(msg, " * * :");
-	/*
-	std::vector<std::string> msgs;
-	msgs = split_(msg, " * * :");
-	for (auto msg = msgs.begin(); msg != msgs.end(); ++msg) {
-		parts.push_back(*msg);
-	}
-	*/
 
 	for (auto it = parts.begin(); it != parts.end(); ++it) {
 		std::cout << "parts[..] = " << *it << std::endl;
@@ -221,7 +132,6 @@ int main(int argc, char **argv)
 
 			client.set_endpoint(sock.remote_endpoint());
 
-			//std::deque<std::string> temp_msgs = end_msgs[sock.remote_endpoint()];
 			std::deque<std::string> temp_msgs;
 			for (auto msg = end_msgs[sock.remote_endpoint()].begin();
 					msg != end_msgs[sock.remote_endpoint()].end();
