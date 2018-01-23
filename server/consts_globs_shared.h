@@ -9,6 +9,8 @@
 #ifndef __CONSTS_GLOBS_SHARED_H__
 #define __CONSTS_GLOBS_SHARED_H__
 
+#include "user.h"
+
 #include <string>
 #include <atomic>
 #include <map>
@@ -16,8 +18,6 @@
 #include <mutex>
 #include <tuple>
 #include <boost/asio.hpp>
-
-#include "user.h"
 
 using boost::asio::ip::tcp;
 

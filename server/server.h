@@ -9,11 +9,13 @@
 #ifndef __SERVER_H__
 #define __SERVER_H__
 
-// includes, object and method definitions.
+#include "consts_globs_shared.h"
+#include "servlet.h"
+#include "user.h"
+
 #include <iostream>
 #include <string>
 #include <map>
-#include <vector>
 #include <array>
 #include <deque>
 #include <mutex>
@@ -21,15 +23,8 @@
 #include <tuple>
 #include <atomic>
 #include <boost/asio.hpp>
-#include <boost/algorithm/string.hpp>
-
-#include "servlet.h"
-#include "user.h"
-#include "consts_globs_shared.h"
 
 using boost::asio::ip::tcp;
-
-std::vector<std::string> split(std::string full_msg, std::string delim);
 
 /*
  */

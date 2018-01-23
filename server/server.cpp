@@ -6,15 +6,16 @@
  * @TODO: sock_io ops need proper timeout mechanisms so doesn't block forever
  * or make actually async
  *
- * @TODO: revamp split method, use boost regex, or something
+ * @TODO: still need to implement proper graceful exit. Use a signal handler
+ * for CTRL+C? Or can wait for input such as "QUIT" or "EXIT"
+ *
+ * @TODO: just detacch threads, notify them they need to exit, and exit?
  */
 
 #include "server.h"
 #include "../libs/sockio.h"
 
-#define 	BUFF_SIZE 		1024
-
-/*      	INIT GLOBALS 		*/
+// ************ GLOBALS ****************
 std::string RPL_WELCOME;
 std::string RPL_TOPIC;
 std::string RPL_NAMREPLY;
@@ -25,8 +26,9 @@ std::atomic<bool> killself;
 std::map<std::string, std::deque<std::tuple<User, std::deque<std::string>>>> chan_newusers;
 std::deque<tcp::socket> global_socks;
 std::mutex gl_lock;
-/*      	INIT GLOBALS 		*/
+// ************ GLOBALS ****************
 
+// UNFINISHED
 void signal_handler(int signal)
 {
 	if (signal)

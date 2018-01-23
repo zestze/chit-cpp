@@ -6,26 +6,7 @@
  * @TODO: revamp split method, use regex, or something.
  */
 
-#include <iostream>
-#include <boost/asio.hpp>
-#include <boost/array.hpp> // not needed
-#include <boost/algorithm/string.hpp>
-#include <string>
-#include <deque>
-#include <array> // not needed
-#include <tuple> // not needed
-#include "user.h"
 #include "client.h"
-#include "../libs/sockio.h"
-
-#include <unistd.h>
-#include <pwd.h>
-#include <stdio.h>
-#include <limits.h>
-
-#define 	BUFF_SIZE 		1024
-
-using boost::asio::ip::tcp;
 
 std::string RESERVED_CHARS[3] = {":", "!", "@"};
 
@@ -49,16 +30,6 @@ void update(tcp::socket& sock)
 	update_sockmsgs(sock, sock_msgs);
 }
 
-std::string to_cyan(std::string msg)
-{
-	return "\033[1;36m" + msg + "\033[0m";
-}
-
-std::string to_magenta(std::string msg)
-{
-	return "\033[1;35m" + msg + "\033[0m";
-}
-
 User query_and_create()
 {
 	std::string msg;
@@ -71,7 +42,7 @@ User query_and_create()
 	std::cout << to_cyan(msg);
 
 	std::string nick;
-	std::cin >> nick;
+	getline(std::cin, nick);
 
 	struct passwd *pw;
 	uid_t uid;
@@ -82,33 +53,29 @@ User query_and_create()
 	msg  = "What is your real name?\n";
 	std::cout << to_cyan(msg);
 	std::string real;
-	std::cin >> real;
+	getline(std::cin, real);
 
 	return User(nick, user, real);
 }
 
 void pass_user_info_to_server(User this_user, tcp::socket& serv_sock)
 {
-	try {
-		// send NICK
-		std::string msg = "NICK " + this_user.get_nick() + "\r\n";
-		try_writing(serv_sock, msg);
-		// write to socket
+	// send NICK
+	std::string msg = "NICK " + this_user.get_nick() + "\r\n";
+	try_writing(serv_sock, msg);
+	// write to socket
 
-		// send USER; asterisks for ignored fields
-		msg  = "USER " + this_user.get_user() + " * * :";
-		msg += this_user.get_real() + "\r\n";
-		try_writing(serv_sock, msg);
+	// send USER; asterisks for ignored fields
+	msg  = "USER " + this_user.get_user() + " * * :";
+	msg += this_user.get_real() + "\r\n";
+	try_writing(serv_sock, msg);
 
-		std::string reply = try_reading(serv_sock);
-		if (DEBUG) {
-			std::cout << "DEBUG: should be confirmation message\n";
-			std::cout << reply << std::endl;
-		}
-		// @TODO: check if reply has correct reply in it.
-	} catch (...) {
-		throw;
+	std::string reply = try_reading(serv_sock);
+	if (DEBUG) {
+		std::cout << "DEBUG: should be confirmation message\n";
+		std::cout << reply << std::endl;
 	}
+	// @TODO: check if reply has correct reply in it.
 }
 
 std::string parse_topic_msg(std::string msg)
@@ -135,64 +102,61 @@ std::string parse_user_list_msg(std::string msg)
 
 std::string connect_to_channel(tcp::socket& sock)
 {
-	try {
-		std::string msg;
-		msg  = "\n";
-		msg += "##########################\n";
-		msg += "What #channel would you like to join?\n";
-		std::cout << to_cyan(msg);
+	std::string msg;
+	msg  = "\n";
+	msg += "##########################\n";
+	msg += "What #channel would you like to join?\n";
+	std::cout << to_cyan(msg);
 
-		std::string channel;
-		std::cin >> channel;
-		if (channel.substr(0, 1) != "#")
-			channel = "#" + channel;
+	std::string channel;
+	getline(std::cin, channel);
 
-		msg  = "JOIN " + channel + "\r\n";
-		try_writing(sock, msg);
+	if (channel.substr(0, 1) != "#")
+		channel = "#" + channel;
 
-		// wait for confirmation message from server
-		std::string reply = try_reading(sock);
-		if (DEBUG) {
-			std::cout << "DEBUG: should be confirmation message\n";
-			std::cout << reply << std::endl;
-		}
+	msg  = "JOIN " + channel + "\r\n";
+	try_writing(sock, msg);
 
-		msg  = "\n";
-		msg += "##########################\n";
-		msg += "Successfully connected to " + channel + "\n";
-		std::cout << to_cyan(msg);
-
-		// should get TOPIC
-		reply = try_reading(sock);
-		if (DEBUG)
-			std::cout << reply << std::endl;
-
-		msg  = "\n";
-		msg += "##########################\n";
-		msg += channel + " Topic:\n";
-		msg += parse_topic_msg(reply) + "\n";
-		std::cout << to_cyan(msg);
-
-		// should get LIST of users
-		reply = try_reading(sock);
-		if (DEBUG)
-			std::cout << reply << std::endl;
-
-		msg  = "\n";
-		msg += "##########################\n";
-		msg += channel + " Users:\n";
-		msg += parse_user_list_msg(reply) + "\n";
-		std::cout << to_cyan(msg);
-
-		// should get END OF NAMES
-		reply = try_reading(sock);
-		if (DEBUG)
-			std::cout << reply << std::endl;
-
-		return channel;
-	} catch (...) {
-		throw;
+	// wait for confirmation message from server
+	std::string reply = try_reading(sock);
+	if (DEBUG) {
+		std::cout << "DEBUG: should be confirmation message\n";
+		std::cout << reply << std::endl;
 	}
+
+	msg  = "\n";
+	msg += "##########################\n";
+	msg += "Successfully connected to " + channel + "\n";
+	std::cout << to_cyan(msg);
+
+	// should get TOPIC
+	reply = try_reading(sock);
+	if (DEBUG)
+		std::cout << reply << std::endl;
+
+	msg  = "\n";
+	msg += "##########################\n";
+	msg += channel + " Topic:\n";
+	msg += parse_topic_msg(reply) + "\n";
+	std::cout << to_cyan(msg);
+
+	// should get LIST of users
+	reply = try_reading(sock);
+	if (DEBUG)
+		std::cout << reply << std::endl;
+
+	msg  = "\n";
+	msg += "##########################\n";
+	msg += channel + " Users:\n";
+	msg += parse_user_list_msg(reply) + "\n";
+	std::cout << to_cyan(msg);
+
+	// should get END OF NAMES
+	reply = try_reading(sock);
+	if (DEBUG)
+		std::cout << reply << std::endl;
+
+	return channel;
 }
 
 void parse_session_msg(std::string msg)
@@ -306,17 +270,15 @@ int main(int argc, char **argv)
 		for (;;) {
 			update(serv_sock);
 
-			for (auto it = sock_msgs.begin(); it != sock_msgs.end();
-									++it) {
+			for (auto msg = sock_msgs.begin(); msg != sock_msgs.end();
+									++msg) {
 				if (DEBUG)
-					std::cout << "MSG: " << *it << std::endl;
-				parse_session_msg(*it);
+					std::cout << "MSG: " << *msg << std::endl;
+				parse_session_msg(*msg);
 			}
-
 			sock_msgs.clear();
 
 			std::cout << to_cyan(this_user.get_nick() + ": ");
-			//std::cin >> msg;
 			getline(std::cin, msg);
 
 			bool quit = parse_user_input(serv_sock, msg, this_user.get_chan());

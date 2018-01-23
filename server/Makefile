@@ -3,7 +3,7 @@ CC 		= g++
 CXX 		= g++
 INCLUDES 	= -I../libs/
 CFLAGS 		= -g -Wall $(INCLUDES)
-CXXFLAGS 	= -g -Wall $(INCLUDES) -std=c++11 -pthread
+CXXFLAGS 	= -g -Wall $(INCLUDES) -std=c++11 -pthread -O2
 LDFLAGS 	= -g -pthread -L../libs/
 LDLIBS 		= -lboost_system -lsockio
 

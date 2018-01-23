@@ -9,9 +9,6 @@
 #include "servlet.h"
 #include "../libs/sockio.h"
 
-#define 	BUFF_SIZE 		1024
-
-
 std::deque<tcp::socket>::iterator Servlet::get_sock_for_user(User user)
 {
 	auto it = _socks.begin();
@@ -64,7 +61,7 @@ std::deque<User> Servlet::grab_new()
 		//std::cout << newu.print_() << std::endl;
 
 		// copy over messages
-		std::deque<std::string> temp_msgs(std::get<1>(*tup_it));
+		std::deque<std::string> temp_msgs(std::move(std::get<1>(*tup_it)));
 		_end_msgs[newu.get_endpt()]; // initialize
 		for (auto msg = temp_msgs.begin(); msg != temp_msgs.end(); ++msg) {
 			_end_msgs[newu.get_endpt()].push_back(*msg);
