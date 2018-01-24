@@ -5,6 +5,9 @@
  */
 #include "sockio.h"
 
+//const int BUFF_SIZE = 1024;
+#define BUFF_SIZE 1024
+
 //using boost::asio::ip::tcp;
 
 std::deque<std::string> split_(std::string full_msg, std::string delim)
