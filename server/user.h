@@ -58,12 +58,12 @@ class User
 			_endpt = new_e;
 		}
 
-		std::string get_nick() { return _nick; 	   }
-		std::string get_user() { return _user_name; }
-		std::string get_real() { return _real_name; }
-		std::string get_pass() { return _password;  }
-		std::string get_chan() { return _channel;   }
-		boost::asio::ip::tcp::endpoint get_endpt() { return _endpt; }
+		std::string get_nick() const { return _nick; 	   }
+		std::string get_user() const { return _user_name; }
+		std::string get_real() const { return _real_name; }
+		std::string get_pass() const { return _password;  }
+		std::string get_chan() const { return _channel;   }
+		boost::asio::ip::tcp::endpoint get_endpt() const { return _endpt; }
 
 		std::string print_()
 		{

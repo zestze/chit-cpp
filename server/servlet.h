@@ -68,14 +68,14 @@ class Servlet {
 		void set_topic(std::string new_t) { _topic = new_t; }
 
 		// member accessors
-		std::string get_chan() { return _channel_name; }
-		std::string get_topic() { return _topic; }
+		std::string get_chan() const  { return _channel_name; }
+		std::string get_topic() const { return _topic; }
 		void add_user(User new_u) { _users.push_back(new_u); }
 
 		// formerly not member functions
 		/*
 		 */
-		std::deque<tcp::socket>::iterator get_sock_for_user(User user);
+		std::deque<tcp::socket>::iterator get_sock_for_user(const User& user);
 
 		/*
 		 */
@@ -83,11 +83,11 @@ class Servlet {
 
 		/*
 		 */
-		std::string try_reading(User user);
+		std::string try_reading(const User& user);
 
 		/*
 		 */
-		void try_writing(User user, std::string msg);
+		void try_writing(const User& user, std::string msg);
 
 		/*
 		 */
@@ -99,7 +99,7 @@ class Servlet {
 
 		/*
 		 */
-		bool check_user_in(User user, std::deque<User> deq);
+		bool check_user_in(const User& user, const std::deque<User>& deq);
 
 		/*
 		 */
@@ -113,7 +113,7 @@ class Servlet {
 
 		/*
 		 */
-		void handle_msg(std::string msg, tcp::endpoint end);
+		void handle_msg(std::string msg, const tcp::endpoint& end);
 
 		/*
 		 */

@@ -9,7 +9,7 @@
 #include "servlet.h"
 #include "../libs/sockio.h"
 
-std::deque<tcp::socket>::iterator Servlet::get_sock_for_user(User user)
+std::deque<tcp::socket>::iterator Servlet::get_sock_for_user(const User& user)
 {
 	auto it = _socks.begin();
 	for (; it != _socks.end(); ++it) {
@@ -19,7 +19,7 @@ std::deque<tcp::socket>::iterator Servlet::get_sock_for_user(User user)
 	return it;
 }
 
-std::string Servlet::try_reading(User user)
+std::string Servlet::try_reading(const User& user)
 {
 	tcp::endpoint end = user.get_endpt();
 	tcp::socket& sock = *get_sock_for_user(user);
@@ -29,7 +29,7 @@ std::string Servlet::try_reading(User user)
 	return try_reading_from_sock(sock, sock_msgs);
 }
 
-void Servlet::try_writing(User user, std::string msg)
+void Servlet::try_writing(const User& user, std::string msg)
 {
 	tcp::socket& sock = *get_sock_for_user(user);
 	try_writing_to_sock(sock, msg);
@@ -37,11 +37,20 @@ void Servlet::try_writing(User user, std::string msg)
 
 void Servlet::update_endmsgs()
 {
+	/*
 	for (auto sock_it = _socks.begin(); sock_it != _socks.end(); ++sock_it) {
 		tcp::socket& sock = *sock_it;
 		tcp::endpoint end = sock.remote_endpoint();
 		if (!_end_msgs.count(end))
 			_end_msgs[end]; // instantiate because I'm a paranoid boy
+		std::deque<std::string>& sock_msgs = _end_msgs[end];
+		update_sockmsgs(sock, sock_msgs);
+	}
+	*/
+	for (auto& sock : _socks) {
+		tcp::endpoint end = sock.remote_endpoint();
+		if (!_end_msgs.count(end))
+			_end_msgs[end]; // instantiate bc i'm paranoid
 		std::deque<std::string>& sock_msgs = _end_msgs[end];
 		update_sockmsgs(sock, sock_msgs);
 	}
@@ -53,6 +62,7 @@ std::deque<User> Servlet::grab_new()
 	std::unique_lock<std::mutex> lck(gl_lock);
 	std::string chan = _channel_name;
 	std::deque<User> newusers;
+	/*
 	for (auto tup_it = chan_newusers[chan].begin(); tup_it != chan_newusers[chan].end(); ++tup_it) {
 		// copy over user
 		User newu = std::get<0>(*tup_it);
@@ -70,13 +80,39 @@ std::deque<User> Servlet::grab_new()
 		// for later handling of new users
 		newusers.push_back(newu);
 	}
+	*/
+
+	for (auto& tup : chan_newusers[chan]) {
+		// copy over user
+		User& newu = std::get<0>(tup);
+		add_user(newu);
+
+		//std::cout << newu.print_() << std::endl;
+
+		// copy over messages
+		std::deque<std::string> temp_msgs(std::move(std::get<1>(tup)));
+		_end_msgs[newu.get_endpt()]; // initialize
+		for (auto& msg : temp_msgs)
+			_end_msgs[newu.get_endpt()].push_back(msg);
+
+		// for later handling
+		newusers.push_back(newu);
+	}
 	chan_newusers[chan].clear();
 
 	// grab new sockets
 	for (auto sock_it = global_socks.begin(); sock_it != global_socks.end(); ) {
 		bool match = false;
+		/*
 		for (auto user = _users.begin(); user != _users.end(); ++user) {
 			if (sock_it->remote_endpoint() == user->get_endpt()) {
+				match = true;
+				break;
+			}
+		}
+		*/
+		for (auto& user : _users) {
+			if (sock_it->remote_endpoint() == user.get_endpt()) {
 				match = true;
 				break;
 			}
@@ -92,8 +128,9 @@ std::deque<User> Servlet::grab_new()
 	return newusers;
 }
 
-bool Servlet::check_user_in(User user, std::deque<User> deq)
+bool Servlet::check_user_in(const User& user, const std::deque<User>& deq)
 {
+	/*
 	bool found = false;
 	for (auto it = deq.begin(); it != deq.end(); ++it) {
 		if (user.get_endpt() == it->get_endpt()) {
@@ -101,15 +138,24 @@ bool Servlet::check_user_in(User user, std::deque<User> deq)
 			break;
 		}
 	}
-	return found;
+	*/
+	for (auto& u : deq) {
+		if (user.get_endpt() == u.get_endpt())
+			return true;
+	}
+	return false;
 }
 
+// @TODO: THIS IS WHERE I LEFT OFF, CHANGING FOR LOOPS TO BE EASIER TO UNDERSTAND
 void Servlet::handle_newusers()
 {
 	std::deque<User> newusers(grab_new());
 	std::deque<User> handled;
+	for (auto& newuser : newusers) {
+		/*
 	for (auto it = newusers.begin(); it != newusers.end(); ++it) {
 		User newuser(*it); // won't use 'it' after this
+		*/
 
 		handled.push_back(newuser);
 
@@ -119,9 +165,18 @@ void Servlet::handle_newusers()
 		msg += " JOIN " + newuser.get_chan() + "\r\n";
 
 		std::string usernames = "";
+		/*
 		for (auto it2 = _users.begin(); it2 != _users.end(); ++it2) {
 			User user(*it2);
 			if (check_user_in(user, newusers) && !check_user_in(user, handled))
+				continue;
+			try_writing(user, msg);
+
+			usernames += "@" + user.get_nick() + " ";
+		}
+		*/
+		for (auto& user : _users) {
+			if (check_user_in(user, newusers) && check_user_in(user, handled))
 				continue;
 			try_writing(user, msg);
 
@@ -166,7 +221,7 @@ bool Servlet::check_endmsgs()
 	return false;
 }
 
-void Servlet::handle_msg(std::string msg, tcp::endpoint end)
+void Servlet::handle_msg(std::string msg, const tcp::endpoint& end)
 {
 	User client;
 	for (auto it = _users.begin(); it != _users.end(); ++it) {

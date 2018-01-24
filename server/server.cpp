@@ -60,9 +60,13 @@ User register_session(tcp::socket& sock)
 	std::cout << "MSG: " << msg << std::endl;
 	std::deque<std::string> parts = split_(msg, " * * :");
 
+	/*
 	for (auto it = parts.begin(); it != parts.end(); ++it) {
 		std::cout << "parts[..] = " << *it << std::endl;
 	}
+	*/
+	for (const auto& p : parts)
+		std::cout << "parts[..] = " << p << std::endl;
 	std::string part1, part2;
 	part1 = parts.front();
 	part2 = parts.back();
@@ -135,11 +139,16 @@ int main(int argc, char **argv)
 			client.set_endpoint(sock.remote_endpoint());
 
 			std::deque<std::string> temp_msgs;
+			/*
 			for (auto msg = end_msgs[sock.remote_endpoint()].begin();
 					msg != end_msgs[sock.remote_endpoint()].end();
 					++msg) {
 				temp_msgs.push_back(*msg);
 			}
+			*/
+			for (const auto& msg : end_msgs[sock.remote_endpoint()])
+				temp_msgs.push_back(msg);
+
 			end_msgs.erase(sock.remote_endpoint());
 
 			{
