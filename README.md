@@ -7,6 +7,12 @@ As of now, it creates chat rooms on demand, and allows for indeterminate amount 
 options are simple, users can enter chat rooms (which will be created if one doesn't exist already),
 broadcast messages across the chat room, and exit the chat room.
 
+Requirements
+------------
+- g++ compiler capable of running atleast C++11
+- make
+- c++ boost libraries, as of now assumes it's installed in $PATH
+
 Features to Implement
 ---------------------
 - [ ] "Modes" for users that limit actions
