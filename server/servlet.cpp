@@ -171,7 +171,8 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 	User client;
 	for (auto it = _users.begin(); it != _users.end(); ++it) {
 		if (it->get_endpt() == end) {
-			client = User(*it);
+			//client = User(*it);
+			client = *it;;
 			break;
 		}
 	}
@@ -259,7 +260,8 @@ void Servlet::handle_endmsgs()
 		for (auto msg = msgs.begin(); msg != msgs.end(); ++msg) {
 			handle_msg(*msg, end);
 		}
-		msgs.clear(); // because reference should clear the actual
+		if (_end_msgs.count(end) && !msgs.empty())
+			msgs.clear(); // because reference should clear the actual
 	}
 }
 
@@ -275,7 +277,9 @@ void run(std::string channel)
 			servlet.update_endmsgs();
 
 			// Handle end_msgs
-			servlet.handle_endmsgs();
+			check = servlet.check_endmsgs();
+			if (check)
+				servlet.handle_endmsgs();
 		}
 		// clean up, don't need to close sockets since map and deque should do
 		// implicitly by destructor call.
