@@ -59,6 +59,7 @@ void Servlet::try_writing(User user, std::string msg)
 void Servlet::update_endmsgs()
 {
 	try {
+		std::cout << "update_endmsgs\n";
 	for (auto sock_it = _socks.begin(); sock_it != _socks.end(); ++sock_it) {
 		tcp::socket& sock = *sock_it;
 		tcp::endpoint end = sock.remote_endpoint();
@@ -78,6 +79,7 @@ void Servlet::update_endmsgs()
 std::deque<User> Servlet::grab_new()
 {
 	try {
+		std::cout << "grab_new\n";
 	// get the new user, and their messages read from socket thus far
 	std::unique_lock<std::mutex> lck(gl_lock);
 	std::string chan = _channel_name;
@@ -127,7 +129,7 @@ std::deque<User> Servlet::grab_new()
 	}
 }
 
-bool Servlet::check_user_in(User user, std::deque<User> deq)
+bool Servlet::check_user_in(User user, const std::deque<User>& deq)
 {
 	try {
 	bool found = false;
@@ -149,6 +151,7 @@ bool Servlet::check_user_in(User user, std::deque<User> deq)
 void Servlet::handle_newusers()
 {
 	try {
+		std::cout << "handle_newusers\n";
 	std::deque<User> newusers(grab_new());
 	std::deque<User> handled;
 	for (auto it = newusers.begin(); it != newusers.end(); ++it) {
@@ -232,10 +235,13 @@ bool Servlet::check_endmsgs()
 void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 {
 	try {
+		std::cout << "handle_msg\n";
+	//User client = *_users.begin();
 	User client;
 	for (auto it = _users.begin(); it != _users.end(); ++it) {
 		if (it->get_endpt() == end) {
-			client = User(*it);
+			//client = User(*it);
+			client = *it;
 			break;
 		}
 	}
@@ -277,6 +283,7 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 			try_writing(*it, reply);
 		}
 
+		std::cout << "removing user from users deque\n";
 		// remove user from users deque
 		// del entry for end_msgs and end_socks
 		for (auto it = _users.begin(); it != _users.end(); ++it) {
@@ -286,9 +293,11 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 			}
 		}
 
+		std::cout << "removing sock_msgs for user\n";
 		// get rid of deque associated with socket
 		_end_msgs.erase(end);
 
+		std::cout << "removing socket from sockets\n";
 		// get rid of socket
 		for (auto it = _socks.begin(); it != _socks.end(); ++it) {
 			boost::system::error_code ec;
@@ -298,12 +307,13 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 				// to get rid of.
 				_socks.erase(it);
 				break;
-			} if (this_end == end) {
+			} else if (this_end == end) {
 				_socks.erase(it); // calling erase like this should
 				// implicitly close socket
 				break;
 			}
 		}
+		std::cout << "Done removing evertyghin for this user\n";
 
 	} else {
 		std::cout << "Unrecognized Message:" << std::endl;
@@ -323,6 +333,7 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 void Servlet::handle_endmsgs()
 {
 	try {
+		std::cout << "handle_endmsgs\n";
 	for (auto em_it = _end_msgs.begin(); em_it != _end_msgs.end(); ++em_it) {
 		tcp::endpoint end(em_it->first);
 		std::deque<std::string>& msgs = em_it->second;
@@ -330,7 +341,8 @@ void Servlet::handle_endmsgs()
 		for (auto msg = msgs.begin(); msg != msgs.end(); ++msg) {
 			handle_msg(*msg, end);
 		}
-		msgs.clear(); // because reference should clear the actual
+		if (_end_msgs.count(end) && !msgs.empty())
+			msgs.clear(); // because reference should clear the actual
 	}
 	}
 	catch (std::exception& e) {
@@ -351,20 +363,23 @@ void run(std::string channel)
 
 			servlet.update_endmsgs();
 
+			check = servlet.check_endmsgs();
+
 			// Handle end_msgs
-			servlet.handle_endmsgs();
+			if (check)
+				servlet.handle_endmsgs();
 		}
 		// clean up, don't need to close sockets since map and deque should do
 		// implicitly by destructor call.
 		std::cout << "Thread exiting" << std::endl;
 	} catch (const std::exception& e) {
-		std::cout << "There was an error:" << std::endl;
+		std::cout << "There was an error, exiting run:" << std::endl;
 		std::cout << e.what() << std::endl;
 	} catch (...) {
 		// @TODO: check if child threads can catch keyboard exceptions etc.
 		// since we want the parent thread to handle that stuff.
 		// Might need a signal handler?
 		// @TODO: make another catch for catcheable exceptions.
-		std::cout << "There was an error" << std::endl;
+		std::cout << "There was an error, exiting run" << std::endl;
 	}
 }
