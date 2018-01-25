@@ -2,6 +2,15 @@
  * user.h
  *
  * Zeke Reyna
+ *
+ * This class holds information that can be used to differentiate each user
+ * connected the server.
+ * The _endpt member is in fact a remote_endpoint, which is used for grabbing
+ * the correct socket when info needs to be passed to the host associated with
+ * this user.
+ *
+ * @TODO: change as much as possible to const args, or const rettypes
+ * @TODO: implement move constructor? Mght be worth it for endpoint...
  */
 #ifndef __USER_H__
 #define __USER_H__
@@ -50,8 +59,8 @@ class User
 
 
 		// member functions
-		void set_nick(std::string new_nick) { _nick = new_nick; }
-		void set_pass(std::string new_pass) { _password = new_pass; }
+		void set_nick(std::string new_nick)    { _nick = new_nick; }
+		void set_pass(std::string new_pass)    { _password = new_pass; }
 		void set_channel(std::string new_chan) { _channel = new_chan; }
 		void set_endpoint(boost::asio::ip::tcp::endpoint new_e)
 		{
@@ -67,7 +76,7 @@ class User
 
 		std::string print_()
 		{
-			std::string msg = "";
+			std::string msg("");
 			msg += "nick: " + _nick + "\n";
 			msg += "user: " + _user_name + "\n";
 			msg += "real: " + _real_name + "\n";

@@ -8,8 +8,6 @@
  *
  * @TODO: still need to implement proper graceful exit. Use a signal handler
  * for CTRL+C? Or can wait for input such as "QUIT" or "EXIT"
- *
- * @TODO: just detacch threads, notify them they need to exit, and exit?
  */
 
 #include "server.h"
