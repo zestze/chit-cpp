@@ -11,32 +11,54 @@
 
 std::deque<tcp::socket>::iterator Servlet::get_sock_for_user(User user)
 {
-	auto it = _socks.begin();
-	for (; it != _socks.end(); ++it) {
-		if (it->remote_endpoint() == user.get_endpt())
-			break;
+	try {
+		auto it = _socks.begin();
+		for (; it != _socks.end(); ++it) {
+			if (it->remote_endpoint() == user.get_endpt())
+				break;
+		}
+		return it;
 	}
-	return it;
+	catch (std::exception& e) {
+		std::cout << "ERROR: " << e.what() << std::endl;
+		std::cout << "get_sock_for_user" << std::endl;
+		throw;
+	}
 }
 
 std::string Servlet::try_reading(User user)
 {
+	try {
 	tcp::endpoint end = user.get_endpt();
 	tcp::socket& sock = *get_sock_for_user(user);
 	if (_end_msgs.count(end))
 		_end_msgs[end];
 	std::deque<std::string>& sock_msgs = _end_msgs[end];
 	return try_reading_from_sock(sock, sock_msgs);
+	}
+	catch (std::exception& e) {
+		std::cout << "ERROR: " << e.what() << std::endl;
+		std::cout << "try_reading" << std::endl;
+		throw;
+	}
 }
 
 void Servlet::try_writing(User user, std::string msg)
 {
+	try {
 	tcp::socket& sock = *get_sock_for_user(user);
 	try_writing_to_sock(sock, msg);
+	}
+	catch (std::exception& e) {
+		std::cout << "ERROR: " << e.what() << std::endl;
+		std::cout << "try_writing" << std::endl;
+		throw;
+	}
 }
 
 void Servlet::update_endmsgs()
 {
+	try {
 	for (auto sock_it = _socks.begin(); sock_it != _socks.end(); ++sock_it) {
 		tcp::socket& sock = *sock_it;
 		tcp::endpoint end = sock.remote_endpoint();
@@ -45,10 +67,17 @@ void Servlet::update_endmsgs()
 		std::deque<std::string>& sock_msgs = _end_msgs[end];
 		update_sockmsgs(sock, sock_msgs);
 	}
+	}
+	catch (std::exception& e) {
+		std::cout << "ERROR: " << e.what() << std::endl;
+		std::cout << "update_endmsgs" << std::endl;
+		throw;
+	}
 }
 
 std::deque<User> Servlet::grab_new()
 {
+	try {
 	// get the new user, and their messages read from socket thus far
 	std::unique_lock<std::mutex> lck(gl_lock);
 	std::string chan = _channel_name;
@@ -90,10 +119,17 @@ std::deque<User> Servlet::grab_new()
 		}
 	}
 	return newusers;
+	}
+	catch (std::exception& e) {
+		std::cout << "ERROR: " << e.what() << std::endl;
+		std::cout << "grab_new" << std::endl;
+		throw;
+	}
 }
 
 bool Servlet::check_user_in(User user, std::deque<User> deq)
 {
+	try {
 	bool found = false;
 	for (auto it = deq.begin(); it != deq.end(); ++it) {
 		if (user.get_endpt() == it->get_endpt()) {
@@ -102,10 +138,17 @@ bool Servlet::check_user_in(User user, std::deque<User> deq)
 		}
 	}
 	return found;
+	}
+	catch (std::exception& e) {
+		std::cout << "ERROR: " << e.what() << std::endl;
+		std::cout << "check_user_in" << std::endl;
+		throw;
+	}
 }
 
 void Servlet::handle_newusers()
 {
+	try {
 	std::deque<User> newusers(grab_new());
 	std::deque<User> handled;
 	for (auto it = newusers.begin(); it != newusers.end(); ++it) {
@@ -146,28 +189,49 @@ void Servlet::handle_newusers()
 		msg += ":End of NAMES list\r\n";
 		try_writing(newuser, msg);
 	}
+	}
+	catch (std::exception& e) {
+		std::cout << "ERROR: " << e.what() << std::endl;
+		std::cout << "handle_newusers" << std::endl;
+		throw;
+	}
 }
 
 bool Servlet::check_newusers()
 {
+	try {
 	std::unique_lock<std::mutex> lck(gl_lock);
 	if (chan_newusers.count(_channel_name) && !chan_newusers[_channel_name].empty())
 		return true;
 	else
 		return false;
+	}
+	catch (std::exception& e) {
+		std::cout << "ERROR: " << e.what() << std::endl;
+		std::cout << "check_newusers" << std::endl;
+		throw;
+	}
 }
 
 bool Servlet::check_endmsgs()
 {
+	try {
 	for (auto it = _end_msgs.begin(); it != _end_msgs.end(); ++it) {
 		if (!it->second.empty())
 			return true;
 	}
 	return false;
+	}
+	catch (std::exception& e) {
+		std::cout << "ERROR: " << e.what() << std::endl;
+		std::cout << "check_endmsgs" << std::endl;
+		throw;
+	}
 }
 
 void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 {
+	try {
 	User client;
 	for (auto it = _users.begin(); it != _users.end(); ++it) {
 		if (it->get_endpt() == end) {
@@ -248,10 +312,17 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 		std::cout << "Msg end";
 		throw std::invalid_argument("Unrecognized message format");
 	}
+	}
+	catch (std::exception& e) {
+		std::cout << "ERROR: " << e.what() << std::endl;
+		std::cout << "handle_msg" << std::endl;
+		throw;
+	}
 }
 
 void Servlet::handle_endmsgs()
 {
+	try {
 	for (auto em_it = _end_msgs.begin(); em_it != _end_msgs.end(); ++em_it) {
 		tcp::endpoint end(em_it->first);
 		std::deque<std::string>& msgs = em_it->second;
@@ -260,6 +331,12 @@ void Servlet::handle_endmsgs()
 			handle_msg(*msg, end);
 		}
 		msgs.clear(); // because reference should clear the actual
+	}
+	}
+	catch (std::exception& e) {
+		std::cout << "ERROR: " << e.what() << std::endl;
+		std::cout << "handle_endmsgs" << std::endl;
+		throw;
 	}
 }
 
