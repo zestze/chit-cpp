@@ -26,7 +26,6 @@ std::deque<tcp::socket> global_socks;
 std::mutex gl_lock;
 // ************ GLOBALS ****************
 
-// UNFINISHED
 void signal_handler(int signal)
 {
 	if (signal)
@@ -55,11 +54,11 @@ User register_session(tcp::socket& sock)
 
 	msg = try_reading(sock);
 	// "USER <user-name> * * :<real-name>"
-	std::cout << "MSG: " << msg << std::endl;
+	std::cout << "MSG: " << msg << "\n";
 	std::deque<std::string> parts = split_(msg, " * * :");
 
 	for (auto it = parts.begin(); it != parts.end(); ++it) {
-		std::cout << "parts[..] = " << *it << std::endl;
+		std::cout << "parts[..] = " << *it << "\n";
 	}
 	std::string part1, part2;
 	part1 = parts.front();
@@ -102,13 +101,14 @@ void set_globals()
 int main(int argc, char **argv)
 {
 	if (argc != 2) {
-		std::cout << "Usage: ./server <server-port>" << std::endl;
+		std::cout << "Usage: ./server <server-port>\n";
 		return -1;
 	}
-	std::cout << "Starting server..." << std::endl;
+	std::cout << "Starting server...\n";
 	int listen_port = std::stoi(argv[1]);
 
 	set_globals();
+	std::signal(SIGINT, signal_handler);
 
 	std::map<std::string, std::thread> threads;
 	try
@@ -116,10 +116,15 @@ int main(int argc, char **argv)
 		boost::asio::io_service io_service;
 		tcp::acceptor acceptor(io_service,
 				tcp::endpoint(tcp::v4(), listen_port));
+		acceptor.non_blocking(true);
 
-		for (;;) {
+		while (!killself) {
+
 			tcp::socket sock(io_service);
-			acceptor.accept(sock);
+			boost::system::error_code ec;
+			acceptor.accept(sock, ec);
+			if (ec == boost::asio::error::would_block)
+				continue;
 
 			std::cout << "Got a connection at listening port\n";
 			std::cout << "Going to register User\n";
@@ -152,22 +157,18 @@ int main(int argc, char **argv)
 				threads[channel] = std::move(thr);
 			}
 		}
+
+		std::cout << "got signal to killself, going to cleanup threads\n";
+		for (auto it = threads.begin(); it != threads.end(); ++it)
+			it->second.join();
 	}
 	catch (const std::exception& e)
 	{
-		std::cout << e.what() << std::endl;
+		std::cout << e.what() << "\n";
 
 		killself = true; // atomic
 		for (auto it = threads.begin(); it != threads.end(); ++it)
 			it->second.join(); // might not work??? it's a pointer so maybe... but no copy constr.
-		return -1;
-	}
-	catch (...)
-	{
-		std::cout << "Unrecognized error" << std::endl;
-		killself = true;
-		for (auto it = threads.begin(); it != threads.end(); ++it)
-			it->second.join();
 		return -1;
 	}
 	return 0;

@@ -73,7 +73,7 @@ void pass_user_info_to_server(User this_user, tcp::socket& serv_sock)
 	std::string reply = try_reading(serv_sock);
 	if (DEBUG) {
 		std::cout << "DEBUG: should be confirmation message\n";
-		std::cout << reply << std::endl;
+		std::cout << reply << "\n";
 	}
 	// @TODO: check if reply has correct reply in it.
 }
@@ -121,7 +121,7 @@ std::string connect_to_channel(tcp::socket& sock)
 	std::string reply = try_reading(sock);
 	if (DEBUG) {
 		std::cout << "DEBUG: should be confirmation message\n";
-		std::cout << reply << std::endl;
+		std::cout << reply << "\n";
 	}
 
 	msg  = "\n";
@@ -132,7 +132,7 @@ std::string connect_to_channel(tcp::socket& sock)
 	// should get TOPIC
 	reply = try_reading(sock);
 	if (DEBUG)
-		std::cout << reply << std::endl;
+		std::cout << reply << "\n";
 
 	msg  = "\n";
 	msg += "##########################\n";
@@ -143,7 +143,7 @@ std::string connect_to_channel(tcp::socket& sock)
 	// should get LIST of users
 	reply = try_reading(sock);
 	if (DEBUG)
-		std::cout << reply << std::endl;
+		std::cout << reply << "\n";
 
 	msg  = "\n";
 	msg += "##########################\n";
@@ -154,7 +154,7 @@ std::string connect_to_channel(tcp::socket& sock)
 	// should get END OF NAMES
 	reply = try_reading(sock);
 	if (DEBUG)
-		std::cout << reply << std::endl;
+		std::cout << reply << "\n";
 
 	return channel;
 }
@@ -191,7 +191,7 @@ void parse_session_msg(std::string msg)
 		std::string reply  = "ERROR, unrecognized message or buffer overflow\n";
 		reply += msg + "\n";
 		std::cout << reply;
-		std::cout << "MSG length: " << msg.size() << std::endl;
+		std::cout << "MSG length: " << msg.size() << "\n";
 		throw std::invalid_argument("not parseable message or buffer overflow\n");
 	}
 }
@@ -225,11 +225,10 @@ bool parse_user_input(tcp::socket& sock, std::string msg, std::string channel)
 int main(int argc, char **argv)
 {
 	if (argc != 3) {
-		std::cout << "Usage: ./client <server-ip> <server-port>";
-		std::cout << std::endl;
+		std::cout << "Usage: ./client <server-ip> <server-port>\n";
 		return -1;
 	}
-	std::cout << "Starting client..." << std::endl;
+	std::cout << "Starting client...\n";
 	std::string serv_ip = argv[1];
 	int serv_port = std::stoi(argv[2]);
 
@@ -273,7 +272,7 @@ int main(int argc, char **argv)
 			for (auto msg = sock_msgs.begin(); msg != sock_msgs.end();
 									++msg) {
 				if (DEBUG)
-					std::cout << "MSG: " << *msg << std::endl;
+					std::cout << "MSG: " << *msg << "\n";
 				parse_session_msg(*msg);
 			}
 			sock_msgs.clear();
@@ -289,11 +288,11 @@ int main(int argc, char **argv)
 	}
 	catch (const std::exception& e)
 	{
-		std::cout << e.what() << std::endl;
+		std::cout << e.what() << "\n";
 	}
 	catch (...)
 	{
-		std::cout << "Unrecognized error" << std::endl;
+		std::cout << "Unrecognized error\n";
 	}
 
 	return 0;

@@ -178,8 +178,8 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 	}
 
 	if (msg.substr(0, 7) == "PRIVMSG") {
-		std::cout << "in privmsg" << std::endl;
-		std::cout << "MSG: " << msg << std::endl;
+		std::cout << "in privmsg\n";
+		std::cout << "MSG: \n";
 		// format read:
 		// PRIVMSG <channel> :<msg>
 		// format to write:
@@ -197,8 +197,8 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 		}
 
 	} else if (msg.substr(0, 4) == "PART") {
-		std::cout << "in part" << std::endl;
-		std::cout << "MSG: " << msg << std::endl;
+		std::cout << "in part\n";
+		std::cout << "MSG: \n";
 		// format read:
 		// PART <channel>
 		// format to write:
@@ -243,9 +243,9 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 		}
 
 	} else {
-		std::cout << "Unrecognized Message:" << std::endl;
+		std::cout << "Unrecognized Message:\n";
 		std::cout << "Msg begin: ";
-		std::cout << msg << std::endl;
+		std::cout << msg << "\n";
 		std::cout << "Msg end";
 		throw std::invalid_argument("Unrecognized message format");
 	}
@@ -283,15 +283,15 @@ void run(std::string channel)
 		}
 		// clean up, don't need to close sockets since map and deque should do
 		// implicitly by destructor call.
-		std::cout << "Thread exiting" << std::endl;
+		std::cout << "Thread exiting\n";
 	} catch (const std::exception& e) {
-		std::cout << "There was an error:" << std::endl;
-		std::cout << e.what() << std::endl;
+		std::cout << "There was an error:\n";
+		std::cout << e.what() << "\n";
 	} catch (...) {
 		// @TODO: check if child threads can catch keyboard exceptions etc.
 		// since we want the parent thread to handle that stuff.
 		// Might need a signal handler?
 		// @TODO: make another catch for catcheable exceptions.
-		std::cout << "There was an error" << std::endl;
+		std::cout << "There was an error\n";
 	}
 }
