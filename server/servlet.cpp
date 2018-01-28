@@ -2,8 +2,6 @@
  * servlet.cpp
  *
  * Zeke Reyna
- *
- * @TODO: all need to be wrapped in try / catch?
  */
 
 #include "servlet.h"
@@ -56,7 +54,8 @@ std::deque<User> Servlet::grab_new()
 	for (auto tup_it = chan_newusers[chan].begin(); tup_it != chan_newusers[chan].end(); ++tup_it) {
 		// copy over user
 		User newu = std::get<0>(*tup_it);
-		add_user(newu);
+		//add_user(newu);
+		_users.push_back(newu);
 
 		//std::cout << newu.print_() << std::endl;
 
@@ -92,7 +91,7 @@ std::deque<User> Servlet::grab_new()
 	return newusers;
 }
 
-bool Servlet::check_user_in(User user, std::deque<User> deq)
+bool Servlet::check_user_in(User user, std::deque<User>& deq)
 {
 	bool found = false;
 	for (auto it = deq.begin(); it != deq.end(); ++it) {
@@ -287,11 +286,5 @@ void run(std::string channel)
 	} catch (const std::exception& e) {
 		std::cout << "There was an error:\n";
 		std::cout << e.what() << "\n";
-	} catch (...) {
-		// @TODO: check if child threads can catch keyboard exceptions etc.
-		// since we want the parent thread to handle that stuff.
-		// Might need a signal handler?
-		// @TODO: make another catch for catcheable exceptions.
-		std::cout << "There was an error\n";
 	}
 }

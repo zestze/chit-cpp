@@ -5,9 +5,6 @@
  *
  * @TODO: sock_io ops need proper timeout mechanisms so doesn't block forever
  * or make actually async
- *
- * @TODO: still need to implement proper graceful exit. Use a signal handler
- * for CTRL+C? Or can wait for input such as "QUIT" or "EXIT"
  */
 
 #include "server.h"

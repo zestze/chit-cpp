@@ -76,13 +76,15 @@ class Servlet {
 		*/
 
 		// member modifiers
-		void set_topic(std::string new_t) { _topic = new_t; }
+		//void set_topic(std::string new_t) { _topic = new_t; }
 
 		// member accessors
 		// kind of deprecated...
+		/*
 		std::string get_chan() { return _channel_name; }
 		std::string get_topic() { return _topic; }
 		void add_user(User new_u) { _users.push_back(new_u); }
+		*/
 
 		/*
 		 */
@@ -129,7 +131,7 @@ class Servlet {
 
 		/*
 		 */
-		bool check_user_in(User user, std::deque<User> deq);
+		bool check_user_in(User user, std::deque<User>& deq);
 
 		/*
 		 * Check if there are newusers in global map that are waiting to
