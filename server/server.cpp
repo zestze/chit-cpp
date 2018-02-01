@@ -101,6 +101,7 @@ int main(int argc, char **argv)
 		std::cout << "Usage: ./server <server-port>\n";
 		return -1;
 	}
+	std::ios_base::sync_with_stdio(false);
 	std::cout << "Starting server...\n";
 	int listen_port = std::stoi(argv[1]);
 

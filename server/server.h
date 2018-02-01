@@ -4,6 +4,9 @@
  * Zeke Reyna
  *
  * @TODO: give descriptions for each method
+ *
+ * @TODO: change into a class-based server
+ * and write a main function
  */
 
 #ifndef __SERVER_H__

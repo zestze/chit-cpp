@@ -228,6 +228,7 @@ int main(int argc, char **argv)
 		std::cout << "Usage: ./client <server-ip> <server-port>\n";
 		return -1;
 	}
+	std::ios_base::sync_with_stdio(false);
 	std::cout << "Starting client...\n";
 	std::string serv_ip = argv[1];
 	int serv_port = std::stoi(argv[2]);

@@ -15,6 +15,12 @@ broadcast messages across the chat room, and exit the chat room.
 
 ## Features to Implement
 
+- [ ] For errors print to std::cerr and for other info print to std::cout
+- [ ] Can use structured bindings, "auto [el1, el2... ] = get_tuple(...)" when grabbing tuples
+- [ ] Grab elements from tuple by calling get<type> rather than get<indx>
+- [ ] Change unique_lock to scoped_lock (C++17) or lock_guard
+- [ ] Call "ios_base::sync_with_stdio(falste);" in functions using I/O to reduce overhead
+- [ ] Check server.h and sockio.cpp for curr changes to implement
 - [ ] "Modes" for users that limit actions
 - [ ] Maintain state: user profiles, chat history log, etc.
 - [ ] Implement time-out mechanism on read, to account for broken connections
