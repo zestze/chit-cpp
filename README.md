@@ -44,6 +44,7 @@ the server side, similarly follow the output and type `CTRL+C`
 
 ## Features to Implement
 
+- [ ] Put extern globals in their own namespace or something.
 - [ ] For errors print to std::cerr and for other info print to std::cout
 - [ ] Can use structured bindings, "auto [el1, el2... ] = get_tuple(...)" when grabbing tuples
 - [ ] Grab elements from tuple by calling get<type> rather than get<indx>

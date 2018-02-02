@@ -114,8 +114,8 @@ void Servlet::handle_newusers()
 
 		std::string remIP = newuser.get_endpt().address().to_string();
 		std::string msg;
-		msg  = newuser.get_nick() + "!" + newuser.get_user() + "@" + remIP;
-		msg += " JOIN " + newuser.get_chan() + "\r\n";
+		msg = newuser.get_nick() + "!" + newuser.get_user() + "@" + remIP
+		    + " JOIN " + newuser.get_chan() + "\r\n";
 
 		std::string usernames = "";
 		for (auto it2 = _users.begin(); it2 != _users.end(); ++it2) {
@@ -130,19 +130,19 @@ void Servlet::handle_newusers()
 		tcp::socket& sock = *get_sock_for_user(newuser);
 
 		locIP = sock.local_endpoint().address().to_string();
-		msg  = locIP + " " + RPL_TOPIC + " ";
-		msg += newuser.get_nick() + " " + newuser.get_chan() + " ";
-		msg += ":" + _topic + "\r\n";
+		msg = locIP + " " + RPL_TOPIC + " "
+		    + newuser.get_nick() + " " + newuser.get_chan() + " "
+		    + ":" + _topic + "\r\n";
 		try_writing(newuser, msg);
 
-		msg  = locIP + " " + RPL_NAMREPLY + " ";
-		msg += newuser.get_nick() + " " + newuser.get_chan() + " ";
-		msg += ":" + usernames + "\r\n";
+		msg = locIP + " " + RPL_NAMREPLY + " "
+		    + newuser.get_nick() + " " + newuser.get_chan() + " "
+		    + ":" + usernames + "\r\n";
 		try_writing(newuser, msg);
 
-		msg  = locIP + " " + RPL_ENDOFNAMES + " ";
-		msg += newuser.get_nick() + " " + newuser.get_chan() + " ";
-		msg += ":End of NAMES list\r\n";
+		msg = locIP + " " + RPL_ENDOFNAMES + " "
+		    + newuser.get_nick() + " " + newuser.get_chan() + " "
+		    + ":End of NAMES list\r\n";
 		try_writing(newuser, msg);
 	}
 }
@@ -186,8 +186,8 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 
 		std::string clntIP = end.address().to_string();
 		std::string reply;
-		reply  = ":" + client.get_nick() + "!" + client.get_user() + "@";
-		reply += clntIP + " " + msg + "\r\n";
+		reply = ":" + client.get_nick() + "!" + client.get_user() + "@"
+		      + clntIP + " " + msg + "\r\n";
 		for (auto it = _users.begin(); it != _users.end(); ++it) {
 			if (it->get_endpt() == end)
 				continue;
@@ -205,8 +205,8 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 
 		std::string clntIP = end.address().to_string();
 		std::string reply;
-		reply  = ":" + client.get_nick() + "!" + client.get_user() + "@";
-		reply += clntIP + " " + msg + "\r\n";
+		reply = ":" + client.get_nick() + "!" + client.get_user() + "@"
+		      + clntIP + " " + msg + "\r\n";
 		for (auto it = _users.begin(); it != _users.end(); ++it) {
 			if (it->get_endpt() == end)
 				continue;
@@ -285,6 +285,6 @@ void run(std::string channel)
 		std::cout << "Thread exiting\n";
 	} catch (const std::exception& e) {
 		std::cout << "There was an error:\n";
-		std::cout << e.what() << "\n";
+		std::cout << e.what() << std::endl;
 	}
 }

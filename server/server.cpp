@@ -70,9 +70,9 @@ User register_session(tcp::socket& sock)
 	std::string rem_IP = sock.remote_endpoint().address().to_string();
 	std::string loc_IP = sock.local_endpoint().address().to_string();
 
-	msg  = loc_IP + " " + RPL_WELCOME + " " + nick + " :Welcome to";
-	msg += " the Internet Relay Network " + nick + "!" + user_name;
-	msg += "@" + rem_IP + "\r\n";
+	msg  = loc_IP + " " + RPL_WELCOME + " " + nick + " :Welcome to"
+	     + " the Internet Relay Network " + nick + "!" + user_name
+	     + "@" + rem_IP + "\r\n";
 	try_writing(sock, msg);
 
 	return client;
@@ -103,6 +103,7 @@ int main(int argc, char **argv)
 	}
 	std::ios_base::sync_with_stdio(false);
 	std::cout << "Starting server...\n";
+	std::cout << "Type CTRL+C to quit" << std::endl;
 	int listen_port = std::stoi(argv[1]);
 
 	set_globals();
