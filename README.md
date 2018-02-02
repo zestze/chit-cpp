@@ -7,11 +7,40 @@ As of now, it creates chat rooms on demand, and allows for indeterminate amount 
 options are simple, users can enter chat rooms (which will be created if one doesn't exist already),
 broadcast messages across the chat room, and exit the chat room.
 
+Channels hold topics, users, and allow channel-wide discussion. Users interact with the application
+through the command-line, as a GUI will be implemented in the future, and Chit has an emphasis on
+being lightweight. 
+
+Users can choose names to display in the chat, and should perceive minimal delay when joining
+channels.
+
+As of now, no state is maintained across sessions, but this is a feature that is in development
+through the use of a SQL server.
+
+This application is written from the ground-up, only borrowing Boost's ASIO socket library, which
+will be replaced in time.
+
 ## Requirements
 
 - g++ compiler capable of running atleast C++11
-- make
+- make for Makefiles
 - c++ boost libraries, as of now assumes it's installed in $PATH
+	- in future, will port over relevant boost libraries into `libs/` or implement own library
+
+## Usage
+
+First, start up a server by running `./server-test.sh` in the `test/` directory. This will by
+default start a server to listen on port 8081.
+
+Following this, users can join by running one of the other two client scripts in the `test/`
+directory. One connects to a Digital Oceans server, and the other is meant for local connections.
+The programs can be run with any IP address, but these scripts weren't made with that kind of
+use in mind (yet).
+
+Following this, on the client-side the program instructs the user how to connect and queries
+them for relevant information, like nicknames, realnames, etc. and describes the various
+commands. To quit the client-side please follow the instructions and type `EXIT`. To quit
+the server side, similarly follow the output and type `CTRL+C`
 
 ## Features to Implement
 
