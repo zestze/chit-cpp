@@ -44,6 +44,14 @@ the server side, similarly follow the output and type `CTRL+C`
 
 ## Features to Implement
 
+- [ ] Get rid of globals - make a map of [cahannel_name, deque_of_stuff_
+	to_pass] and make it global to main() function.
+	Pass a ptr to each thread as their created, and a copy of the
+	mutex protecting the map. Or a pointer of the mutex?
+	Can have an atomic<bool> for each [key, value] pair to pass as well.
+	Check val after grabbing lock, if not changed, return immediately,
+	else, parse map and grab relevant [key, val] pair?
+	Kind of unecessary, just check if val is empty.
 - [ ] Put extern globals in their own namespace or something.
 - [ ] For errors print to std::cerr and for other info print to std::cout
 - [ ] Can use structured bindings, "auto [el1, el2... ] = get_tuple(...)" when grabbing tuples

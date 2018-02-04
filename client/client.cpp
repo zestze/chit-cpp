@@ -2,8 +2,6 @@
  * client.cpp
  *
  * Zeke Reyna
- *
- * @TODO: revamp split method, use regex, or something.
  */
 
 #include "client.h"
