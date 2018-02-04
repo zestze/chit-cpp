@@ -105,6 +105,11 @@ int main(int argc, char **argv)
 	set_globals();
 	std::signal(SIGINT, signal_handler);
 
+	std::map<std::string, std::deque<std::tuple<User, std::deque<std::string>
+		>>> chan_newusers;
+	std::deque<tcp::socket> global_socks;
+	std::mutex gl_lock;
+
 	std::map<std::string, std::thread> threads;
 	try
 	{
@@ -112,11 +117,6 @@ int main(int argc, char **argv)
 		tcp::acceptor acceptor(io_service,
 				tcp::endpoint(tcp::v4(), listen_port));
 		acceptor.non_blocking(true);
-
-		std::map<std::string, std::deque<std::tuple<User, std::deque<std::string>
-			>>> chan_newusers;
-		std::deque<tcp::socket> global_socks;
-		std::mutex gl_lock;
 
 		while (!killself) {
 
@@ -163,8 +163,12 @@ int main(int argc, char **argv)
 		}
 
 		std::cout << "got signal to killself, going to cleanup threads\n";
+		/*
 		for (auto it = threads.begin(); it != threads.end(); ++it)
 			it->second.join();
+			*/
+		for (auto& t : threads)
+			t.second.join();
 	}
 	catch (const std::exception& e)
 	{

@@ -35,11 +35,10 @@ void Servlet::try_writing(User user, std::string msg)
 
 void Servlet::update_endmsgs()
 {
-	for (auto sock_it = _socks.begin(); sock_it != _socks.end(); ++sock_it) {
-		tcp::socket& sock = *sock_it;
+	for (auto& sock : _socks) {
 		tcp::endpoint end = sock.remote_endpoint();
 		if (!_end_msgs.count(end))
-			_end_msgs[end]; // instantiate because I'm a paranoid boy
+			_end_msgs[end];
 		std::deque<std::string>& sock_msgs = _end_msgs[end];
 		update_sockmsgs(sock, sock_msgs);
 	}
@@ -56,20 +55,20 @@ std::deque<User> Servlet::grab_new()
 	std::unique_lock<std::mutex> lck(gl_lock);
 	std::string chan = _channel_name;
 	std::deque<User> newusers;
-	for (auto tup_it = chan_newusers[chan].begin(); tup_it != chan_newusers[chan].end(); ++tup_it) {
+
+	for (auto& tup : chan_newusers[chan]) {
 		// copy over user
-		User newu = std::get<0>(*tup_it);
-		//add_user(newu);
+		User newu = std::get<0>(tup);
 		_users.push_back(newu);
 
 		//std::cout << newu.print_() << std::endl;
 
 		// copy over messages
-		std::deque<std::string> temp_msgs(std::move(std::get<1>(*tup_it)));
+		std::deque<std::string> temp_msgs(std::move(std::get<1>(tup)));
 		_end_msgs[newu.get_endpt()]; // initialize
-		for (auto msg = temp_msgs.begin(); msg != temp_msgs.end(); ++msg) {
-			_end_msgs[newu.get_endpt()].push_back(*msg);
-		}
+
+		for (auto& msg : temp_msgs)
+			_end_msgs[newu.get_endpt()].push_back(msg);
 
 		// for later handling of new users
 		newusers.push_back(newu);
@@ -79,8 +78,9 @@ std::deque<User> Servlet::grab_new()
 	// grab new sockets
 	for (auto sock_it = global_socks.begin(); sock_it != global_socks.end(); ) {
 		bool match = false;
-		for (auto user = _users.begin(); user != _users.end(); ++user) {
-			if (sock_it->remote_endpoint() == user->get_endpt()) {
+
+		for (auto& user : _users) {
+			if (user.get_endpt() == sock_it->remote_endpoint()) {
 				match = true;
 				break;
 			}
@@ -96,11 +96,11 @@ std::deque<User> Servlet::grab_new()
 	return newusers;
 }
 
-bool Servlet::check_user_in(User user, std::deque<User>& deq)
+bool Servlet::check_user_in(User& user, std::deque<User>& deq)
 {
 	bool found = false;
-	for (auto it = deq.begin(); it != deq.end(); ++it) {
-		if (user.get_endpt() == it->get_endpt()) {
+	for (auto& u : deq) {
+		if (u.get_endpt() == user.get_endpt()) {
 			found = true;
 			break;
 		}
@@ -112,8 +112,7 @@ void Servlet::handle_newusers()
 {
 	std::deque<User> newusers(grab_new());
 	std::deque<User> handled;
-	for (auto it = newusers.begin(); it != newusers.end(); ++it) {
-		User newuser(*it); // won't use 'it' after this
+	for (auto& newuser : newusers) {
 
 		handled.push_back(newuser);
 
@@ -123,8 +122,7 @@ void Servlet::handle_newusers()
 		    + " JOIN " + newuser.get_chan() + "\r\n";
 
 		std::string usernames = "";
-		for (auto it2 = _users.begin(); it2 != _users.end(); ++it2) {
-			User user(*it2);
+		for (auto& user : _users) {
 			if (check_user_in(user, newusers) && !check_user_in(user, handled))
 				continue;
 			try_writing(user, msg);
@@ -166,8 +164,8 @@ bool Servlet::check_newusers()
 
 bool Servlet::check_endmsgs()
 {
-	for (auto it = _end_msgs.begin(); it != _end_msgs.end(); ++it) {
-		if (!it->second.empty())
+	for (auto& em : _end_msgs) {
+		if (!em.second.empty())
 			return true;
 	}
 	return false;
@@ -176,10 +174,9 @@ bool Servlet::check_endmsgs()
 void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 {
 	User client;
-	for (auto it = _users.begin(); it != _users.end(); ++it) {
-		if (it->get_endpt() == end) {
-			//client = User(*it);
-			client = *it;;
+	for (auto& u : _users) {
+		if (u.get_endpt() == end) {
+			client = u;
 			break;
 		}
 	}
@@ -196,11 +193,11 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 		std::string reply;
 		reply = ":" + client.get_nick() + "!" + client.get_user() + "@"
 		      + clntIP + " " + msg + "\r\n";
-		for (auto it = _users.begin(); it != _users.end(); ++it) {
-			if (it->get_endpt() == end)
+		for (auto& u : _users) {
+			if (u.get_endpt() == end)
 				continue;
 			// broadcast PRIVMSG to members besides one who sent it
-			try_writing(*it, reply);
+			try_writing(u, reply);
 		}
 
 	} else if (msg.substr(0, 4) == "PART") {
@@ -215,10 +212,10 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 		std::string reply;
 		reply = ":" + client.get_nick() + "!" + client.get_user() + "@"
 		      + clntIP + " " + msg + "\r\n";
-		for (auto it = _users.begin(); it != _users.end(); ++it) {
-			if (it->get_endpt() == end)
+		for (auto& u : _users) {
+			if (u.get_endpt() == end)
 				continue;
-			try_writing(*it, reply);
+			try_writing(u, reply);
 		}
 
 		// remove user from users deque
@@ -260,13 +257,13 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 
 void Servlet::handle_endmsgs()
 {
-	for (auto em_it = _end_msgs.begin(); em_it != _end_msgs.end(); ++em_it) {
-		tcp::endpoint end(em_it->first);
-		std::deque<std::string>& msgs = em_it->second;
+	for (auto& em : _end_msgs) {
+		tcp::endpoint end = em.first;
+		std::deque<std::string>& msgs = em.second;
 
-		for (auto msg = msgs.begin(); msg != msgs.end(); ++msg) {
-			handle_msg(*msg, end);
-		}
+		for (auto& msg : msgs)
+			handle_msg(msg, end);
+
 		if (_end_msgs.count(end) && !msgs.empty())
 			msgs.clear(); // because reference should clear the actual
 	}

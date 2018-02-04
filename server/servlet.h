@@ -146,7 +146,7 @@ class Servlet {
 
 		/*
 		 */
-		bool check_user_in(User user, std::deque<User>& deq);
+		bool check_user_in(User& user, std::deque<User>& deq);
 
 		/*
 		 * Check if there are newusers in global map that are waiting to
