@@ -182,8 +182,6 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 	}
 
 	if (msg.substr(0, 7) == "PRIVMSG") {
-		std::cout << "in privmsg\n";
-		std::cout << "MSG: \n";
 		// format read:
 		// PRIVMSG <channel> :<msg>
 		// format to write:
@@ -201,8 +199,6 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 		}
 
 	} else if (msg.substr(0, 4) == "PART") {
-		std::cout << "in part\n";
-		std::cout << "MSG: \n";
 		// format read:
 		// PART <channel>
 		// format to write:
@@ -269,11 +265,8 @@ void Servlet::handle_endmsgs()
 	}
 }
 
-void run(std::string channel,
-		std::map<std::string, std::deque<std::tuple<User, std::deque<std::string>>
-		>> *chan_newusers_ptr,
-		std::deque<tcp::socket> *global_socks_ptr,
-		std::mutex *gl_lock_ptr)
+void run(std::string channel, Chan_newusers_ptr chan_newusers_ptr,
+	 std::deque<tcp::socket> *global_socks_ptr, std::mutex *gl_lock_ptr)
 {
 	try {
 		Servlet servlet(channel, chan_newusers_ptr, global_socks_ptr, gl_lock_ptr);

@@ -50,9 +50,6 @@ User register_session(tcp::socket& sock)
 	std::cout << "MSG: " << msg << "\n";
 	std::deque<std::string> parts = split_(msg, " * * :");
 
-	for (auto it = parts.begin(); it != parts.end(); ++it) {
-		std::cout << "parts[..] = " << *it << "\n";
-	}
 	std::string part1, part2;
 	part1 = parts.front();
 	part2 = parts.back();
@@ -61,6 +58,7 @@ User register_session(tcp::socket& sock)
 	real_name = part2;
 
 	User client(nick, user_name, real_name);
+	client.set_endpoint(sock.remote_endpoint());
 	// send "<this-IP> 001 <nick> :Welcome to the Internet
 	// Relay Network <nick>!<user>@<their-IP>\r\n"
 	std::string rem_IP = sock.remote_endpoint().address().to_string();
@@ -126,23 +124,14 @@ int main(int argc, char **argv)
 			if (ec == boost::asio::error::would_block)
 				continue;
 
-			std::cout << "Got a connection at listening port\n";
-			std::cout << "Going to register User\n";
 			User client = register_session(sock);
-			client.set_endpoint(sock.remote_endpoint());
 
-			std::cout << "Going to get channel pref\n";
 			std::string channel = get_channel_name(sock);
 			client.set_channel(channel);
 
-			client.set_endpoint(sock.remote_endpoint());
-
 			std::deque<std::string> temp_msgs;
-			for (auto msg = end_msgs[sock.remote_endpoint()].begin();
-					msg != end_msgs[sock.remote_endpoint()].end();
-					++msg) {
-				temp_msgs.push_back(*msg);
-			}
+			for (auto& msg : end_msgs[sock.remote_endpoint()])
+				temp_msgs.push_back(msg);
 			end_msgs.erase(sock.remote_endpoint());
 
 			{
@@ -163,10 +152,6 @@ int main(int argc, char **argv)
 		}
 
 		std::cout << "got signal to killself, going to cleanup threads\n";
-		/*
-		for (auto it = threads.begin(); it != threads.end(); ++it)
-			it->second.join();
-			*/
 		for (auto& t : threads)
 			t.second.join();
 	}
@@ -175,8 +160,8 @@ int main(int argc, char **argv)
 		std::cout << e.what() << "\n";
 
 		killself = true; // atomic
-		for (auto it = threads.begin(); it != threads.end(); ++it)
-			it->second.join(); // might not work??? it's a pointer so maybe... but no copy constr.
+		for (auto& t : threads)
+			t.second.join();
 		return -1;
 	}
 	return 0;

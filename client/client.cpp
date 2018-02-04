@@ -265,23 +265,18 @@ int main(int argc, char **argv)
 		    + "Have fun :)\n";
 		std::cout << to_cyan(msg);
 
-		for (;;) {
+		bool quit = false;
+		while (!quit) {
 			update(serv_sock);
 
-			for (auto msg = sock_msgs.begin(); msg != sock_msgs.end();
-									++msg) {
-				if (DEBUG)
-					std::cout << "MSG: " << *msg << "\n";
-				parse_session_msg(*msg);
-			}
+			for (auto& msg : sock_msgs)
+				parse_session_msg(msg);
 			sock_msgs.clear();
 
 			std::cout << to_cyan(this_user.get_nick() + ": ");
 			getline(std::cin, msg);
 
-			bool quit = parse_user_input(serv_sock, msg, this_user.get_chan());
-			if (quit)
-				break;
+			quit = parse_user_input(serv_sock, msg, this_user.get_chan());
 		}
 
 	}
