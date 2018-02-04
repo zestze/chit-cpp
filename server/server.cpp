@@ -17,10 +17,6 @@ std::string RPL_NAMREPLY;
 std::string RPL_ENDOFNAMES;
 
 std::atomic<bool> killself;
-
-std::map<std::string, std::deque<std::tuple<User, std::deque<std::string>>>> chan_newusers;
-std::deque<tcp::socket> global_socks;
-std::mutex gl_lock;
 // ************ GLOBALS ****************
 
 void signal_handler(int signal)
@@ -117,6 +113,11 @@ int main(int argc, char **argv)
 				tcp::endpoint(tcp::v4(), listen_port));
 		acceptor.non_blocking(true);
 
+		std::map<std::string, std::deque<std::tuple<User, std::deque<std::string>
+			>>> chan_newusers;
+		std::deque<tcp::socket> global_socks;
+		std::mutex gl_lock;
+
 		while (!killself) {
 
 			tcp::socket sock(io_service);
@@ -152,7 +153,11 @@ int main(int argc, char **argv)
 			}
 
 			if (!threads.count(channel)) {
-				std::thread thr(run, channel);
+				std::thread thr(run,
+						channel,
+						&chan_newusers,
+						&global_socks,
+						&gl_lock);
 				threads[channel] = std::move(thr);
 			}
 		}

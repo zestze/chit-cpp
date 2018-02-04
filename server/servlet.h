@@ -58,6 +58,21 @@ class Servlet {
 		}
 
 		/*
+		 * This looks gross.
+		 */
+		Servlet(std::string c,
+				std::map<std::string, std::deque<
+				std::tuple<User, std::deque<std::string>>
+				>> *cnu_ptr,
+				std::deque<tcp::socket> *gs_ptr,
+				std::mutex *gl_ptr)
+			:_chan_newusers_ptr{cnu_ptr}, _global_socks_ptr{gs_ptr},
+			_gl_lock_ptr{gl_ptr}, _channel_name{c}
+		{
+			_topic = "DEFAULT TOPIC";
+		}
+
+		/*
 		 * SHOULD ONLY BE USED BFORE ADDING ANY USERS OR SOCKETS
 		 */
 		Servlet(Servlet& other)
@@ -164,6 +179,14 @@ class Servlet {
 		void handle_endmsgs();
 
 	private:
+		// for comms with main thread
+		std::map<std::string, std::deque<std::tuple<User, std::deque<std::string>
+			>>> *_chan_newusers_ptr;
+		std::deque<tcp::socket> *_global_socks_ptr;
+		std::mutex *_gl_lock_ptr;
+		// for comms with main thread
+
+
 		std::map<tcp::endpoint, std::deque<std::string>> _end_msgs;
 		std::deque<User> _users;
 		std::deque<tcp::socket> _socks;
@@ -173,6 +196,9 @@ class Servlet {
 
 /*
  */
-void run(std::string channel);
-
+void run(std::string channel,
+		std::map<std::string, std::deque<std::tuple<User, std::deque<std::string>>
+		>> *chan_newusers_ptr,
+		std::deque<tcp::socket> *global_socks_ptr,
+		std::mutex *gl_lock_ptr);
 #endif

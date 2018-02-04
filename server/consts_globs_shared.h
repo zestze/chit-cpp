@@ -31,16 +31,4 @@ extern std::string RPL_ENDOFNAMES;
 // for purpose of telling threads to exit
 extern std::atomic<bool> killself;
 
-// for purpose of passing info to child threads.
-extern std::map<
-		std::string,
-		std::deque<
-			std::tuple<User, std::deque<std::string>>
-			>
-		> chan_newusers;
-
-extern std::deque<tcp::socket> global_socks;
-
-extern std::mutex gl_lock; // for both the map and the deque
-
 #endif

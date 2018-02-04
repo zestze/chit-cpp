@@ -47,6 +47,11 @@ void Servlet::update_endmsgs()
 
 std::deque<User> Servlet::grab_new()
 {
+	// make pointers with local references
+	std::mutex& gl_lock = *_gl_lock_ptr;
+	auto& chan_newusers = *_chan_newusers_ptr;
+	auto& global_socks = *_global_socks_ptr;
+
 	// get the new user, and their messages read from socket thus far
 	std::unique_lock<std::mutex> lck(gl_lock);
 	std::string chan = _channel_name;
@@ -149,6 +154,9 @@ void Servlet::handle_newusers()
 
 bool Servlet::check_newusers()
 {
+	auto& gl_lock = *_gl_lock_ptr;
+	auto& chan_newusers = *_chan_newusers_ptr;
+
 	std::unique_lock<std::mutex> lck(gl_lock);
 	if (chan_newusers.count(_channel_name) && !chan_newusers[_channel_name].empty())
 		return true;
@@ -264,10 +272,14 @@ void Servlet::handle_endmsgs()
 	}
 }
 
-void run(std::string channel)
+void run(std::string channel,
+		std::map<std::string, std::deque<std::tuple<User, std::deque<std::string>>
+		>> *chan_newusers_ptr,
+		std::deque<tcp::socket> *global_socks_ptr,
+		std::mutex *gl_lock_ptr)
 {
 	try {
-		Servlet servlet(channel);
+		Servlet servlet(channel, chan_newusers_ptr, global_socks_ptr, gl_lock_ptr);
 		while (!killself) {
 			bool check = servlet.check_newusers();
 			if (check)
