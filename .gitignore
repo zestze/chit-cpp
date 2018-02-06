@@ -1,5 +1,6 @@
 *.swp*
 *.o
-server
-client
+*server
+*client
+*main
 *.a

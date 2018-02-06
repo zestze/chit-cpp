@@ -14,6 +14,7 @@
 #include <boost/asio.hpp>
 #include <string>
 #include <deque>
+#include <memory>
 
 // for grabbing username
 #include <unistd.h>
@@ -24,17 +25,7 @@
 
 using boost::asio::ip::tcp;
 
-/*
- */
-std::string try_reading(tcp::socket& sock);
-
-/*
- */
-void try_writing(tcp::socket& sock, std::string msg);
-
-/*
- */
-void update(tcp::socket& sock);
+std::string const RESERVED_CHARS[3] = {":", "!", "@"};
 
 /*
  */
@@ -54,32 +45,44 @@ std::string inline to_magenta(std::string msg) {
 	return "\033[1;35m" + msg + "\033[0m";
 }
 
-/*
- */
-User query_and_create();
+class Client {
+	public:
+		std::string try_reading();
 
-/*
- */
-void pass_user_info_to_server(User this_user, tcp::socket& serv_sock);
+		void try_writing(std::string msg);
 
-/*
- */
-std::string parse_topic_msg(std::string msg);
+		void update();
 
-/*
- */
-std::string parse_user_list_msg(std::string msg);
+		void query_and_create();
 
-/*
- */
-std::string connect_to_channel(tcp::socket& sock);
+		void pass_user_info_to_server();
 
-/*
- */
-void parse_session_msg(std::string msg);
+		std::string parse_topic_msg(std::string msg);
 
-/*
- */
-bool parse_user_input(tcp::socket& sock, std::string msg, std::string channel);
+		std::string parse_user_list_msg(std::string msg);
+
+		std::string connect_to_channel();
+
+		void parse_session_msg(std::string msg);
+
+		void handle_topic_request();
+
+		bool parse_user_input(std::string msg);
+
+		void set_sock(boost::asio::io_service& ios);
+
+		void run(std::string serv_ip, std::string port);
+
+	private:
+		//tcp::socket _sock;
+		std::unique_ptr<tcp::socket> _sockptr;
+		User _user;
+
+		std::deque<std::string> _sock_msgs;
+
+		// channel related info
+		std::string _channel_topic;
+		std::string _channel_name;
+};
 
 #endif

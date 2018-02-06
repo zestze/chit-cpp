@@ -54,7 +54,7 @@ class Servlet {
 			:_chan_newusers_ptr{cnu_ptr}, _global_socks_ptr{gs_ptr},
 			_gl_lock_ptr{gl_ptr}, _channel_name{c}
 		{
-			_topic = "DEFAULT TOPIC";
+			_channel_topic = "DEFAULT TOPIC";
 		}
 
 		/*
@@ -158,7 +158,7 @@ class Servlet {
 		std::deque<User> _users;
 		std::deque<tcp::socket> _socks;
 		std::string _channel_name;
-		std::string _topic;
+		std::string _channel_topic;
 };
 
 /*

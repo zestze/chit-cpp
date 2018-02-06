@@ -7,9 +7,9 @@ make
 
 # test
 if [ $# -eq 1 ]; then
-	./server "$1"
+	./main "$1"
 else
-	./server 8081
+	./main 8081
 fi
 
 # clean

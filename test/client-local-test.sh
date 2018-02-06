@@ -5,5 +5,5 @@ make
 
 cd ../client
 make
-./client localhost 8081
+./main localhost 8081
 make clean

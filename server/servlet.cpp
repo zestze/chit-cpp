@@ -134,7 +134,7 @@ void Servlet::handle_newusers()
 		locIP = sock.local_endpoint().address().to_string();
 		msg = locIP + " " + RPL_TOPIC + " "
 		    + newuser.get_nick() + " " + newuser.get_chan() + " "
-		    + ":" + _topic + "\r\n";
+		    + ":" + _channel_topic + "\r\n";
 		try_writing(newuser, msg);
 
 		msg = locIP + " " + RPL_NAMREPLY + " "
@@ -235,6 +235,47 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 				// implicitly close socket
 				break;
 			}
+		}
+
+	} else if (msg.substr(0, 5) == "TOPIC") {
+		// format read:
+		// TOPIC <channel> :<new-topic>
+		// format to write:
+		// nick!<user>@<user-ip> TOPIC <channel> :<new-topic>
+		// Going to send a RPL_TOPIC to person sending the update,
+		// and to the others, will be similar to a PRIVMSG
+
+		std::string split_here = "TOPIC " + _channel_name + " :";
+		std::deque<std::string> parts = split_(msg, split_here);
+		_channel_topic = *--parts.end();
+
+		// the user that modified the topic
+		User modified;
+		for (auto& u : _users) {
+			if (u.get_endpt() == end) {
+				modified = u;
+				break;
+			}
+		}
+
+		const tcp::socket& sock = _socks.front();
+		const std::string locIP = sock.local_endpoint().address().to_string();
+
+		std::string reply = locIP + " " + RPL_TOPIC + " "
+			          + modified.get_nick() + " " + _channel_name
+				  + " :" + _channel_topic + "\r\n";
+		try_writing(modified, reply);
+
+		for (auto& u : _users) {
+			if (u.get_endpt() == modified.get_endpt())
+				continue;
+
+			reply = modified.get_nick() + "!" + modified.get_user() + "@"
+			      + modified.get_endpt().address().to_string()
+			      + " TOPIC " + _channel_name + " :"
+			      + _channel_topic + "\r\n";
+
+			try_writing(u, reply);
 		}
 
 	} else {

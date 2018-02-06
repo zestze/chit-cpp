@@ -7,9 +7,9 @@ make
 
 # test
 if [ $# -eq 2 ]; then
-	./client "$1" "$2"
+	./main "$1" "$2"
 else
-	./client localhost 8081
+	./main localhost 8081
 fi
 
 # clean

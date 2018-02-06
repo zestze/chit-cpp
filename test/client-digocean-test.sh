@@ -7,5 +7,5 @@ make
 
 cd ../client
 make
-./client $serv_ip 8081
+./main $serv_ip 8081
 make clean

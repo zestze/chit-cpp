@@ -2,33 +2,34 @@
  * client.cpp
  *
  * Zeke Reyna
+ *
+ * @TODO: fix parse_session_msg, works fine, but handling is inconsistent.
+ * @TODO: change to regex handling for finer handling
+ * @TODO: move each parse_session_msg option into its own function
  */
 
 #include "client.h"
 
-std::string RESERVED_CHARS[3] = {":", "!", "@"};
-
-std::deque<std::string> sock_msgs;
 
 bool DEBUG = false;
 //bool DEBUG = true;
 
-std::string try_reading(tcp::socket& sock)
+std::string Client::try_reading()
 {
-	return try_reading_from_sock(sock, sock_msgs);
+	return try_reading_from_sock(*_sockptr, _sock_msgs);
 }
 
-void try_writing(tcp::socket& sock, std::string msg)
+void Client::try_writing(std::string msg)
 {
-	try_writing_to_sock(sock, msg);
+	try_writing_to_sock(*_sockptr, msg);
 }
 
-void update(tcp::socket& sock)
+void Client::update()
 {
-	update_sockmsgs(sock, sock_msgs);
+	update_sockmsgs(*_sockptr, _sock_msgs);
 }
 
-User query_and_create()
+void Client::query_and_create()
 {
 	std::string msg;
 	msg = std::string("\n") // not sure why have to do this...
@@ -53,22 +54,22 @@ User query_and_create()
 	std::string real;
 	getline(std::cin, real);
 
-	return User(nick, user, real);
+	_user = User(nick, user, real);
 }
 
-void pass_user_info_to_server(User this_user, tcp::socket& serv_sock)
+void Client::pass_user_info_to_server()
 {
 	// send NICK
-	std::string msg = "NICK " + this_user.get_nick() + "\r\n";
-	try_writing(serv_sock, msg);
+	std::string msg = "NICK " + _user.get_nick() + "\r\n";
+	try_writing(msg);
 	// write to socket
 
 	// send USER; asterisks for ignored fields
-	msg = "USER " + this_user.get_user() + " * * :"
-	    + this_user.get_real() + "\r\n";
-	try_writing(serv_sock, msg);
+	msg = "USER " + _user.get_user() + " * * :"
+	    + _user.get_real() + "\r\n";
+	try_writing(msg);
 
-	std::string reply = try_reading(serv_sock);
+	std::string reply = try_reading();
 	if (DEBUG) {
 		std::cout << "DEBUG: should be confirmation message\n";
 		std::cout << reply << "\n";
@@ -76,7 +77,7 @@ void pass_user_info_to_server(User this_user, tcp::socket& serv_sock)
 	// @TODO: check if reply has correct reply in it.
 }
 
-std::string parse_topic_msg(std::string msg)
+std::string Client::parse_topic_msg(std::string msg)
 {
 	std::string new_msg = "";
 	std::deque<std::string> parts;
@@ -93,12 +94,12 @@ std::string parse_topic_msg(std::string msg)
 }
 
 // lazy... but they do the same thing.
-std::string parse_user_list_msg(std::string msg)
+std::string Client::parse_user_list_msg(std::string msg)
 {
 	return parse_topic_msg(msg);
 }
 
-std::string connect_to_channel(tcp::socket& sock)
+std::string Client::connect_to_channel()
 {
 	std::string msg;
 	msg = std::string("\n")
@@ -113,10 +114,10 @@ std::string connect_to_channel(tcp::socket& sock)
 		channel = "#" + channel;
 
 	msg  = "JOIN " + channel + "\r\n";
-	try_writing(sock, msg);
+	try_writing(msg);
 
 	// wait for confirmation message from server
-	std::string reply = try_reading(sock);
+	std::string reply = try_reading();
 	if (DEBUG) {
 		std::cout << "DEBUG: should be confirmation message\n";
 		std::cout << reply << "\n";
@@ -128,18 +129,20 @@ std::string connect_to_channel(tcp::socket& sock)
 	std::cout << to_blue(msg);
 
 	// should get TOPIC
-	reply = try_reading(sock);
+	reply = try_reading();
 	if (DEBUG)
 		std::cout << reply << "\n";
+
+	_channel_topic = parse_topic_msg(reply);
 
 	msg = std::string("\n")
 	    + "##########################\n"
 	    + channel + " Topic:\n"
-	    + parse_topic_msg(reply) + "\n";
+	    + _channel_topic + "\n";
 	std::cout << to_blue(msg);
 
 	// should get LIST of users
-	reply = try_reading(sock);
+	reply = try_reading();
 	if (DEBUG)
 		std::cout << reply << "\n";
 
@@ -150,15 +153,19 @@ std::string connect_to_channel(tcp::socket& sock)
 	std::cout << to_blue(msg);
 
 	// should get END OF NAMES
-	reply = try_reading(sock);
+	reply = try_reading();
 	if (DEBUG)
 		std::cout << reply << "\n";
 
 	return channel;
 }
 
-void parse_session_msg(std::string msg)
+void Client::parse_session_msg(std::string msg)
 {
+	//@TODO: change to regular expression matching to be robust
+	//@TODO: :<nick> vs <nick> for begin of msg... inconsistent, so fix
+	// bc msg.substr(... found - 1) vs msg.substr(... found)
+
 	std::string to_print;
 	if (msg.find("PRIVMSG") != std::string::npos) {
 		// :<nick>!<user>@<user-ip> PRIVMSG <channel> :<msg>
@@ -180,10 +187,24 @@ void parse_session_msg(std::string msg)
 	} else if (msg.find("JOIN") != std::string::npos) {
 		// <nick>!<user>@<user-ip> JOIN <channel>
 		std::size_t found = msg.find("!");
-		std::string nick = msg.substr(0, found - 1);
+		std::string nick = msg.substr(0, found);
 		found = msg.find("JOIN");
 		std::string channel = msg.substr(found + 5, std::string::npos);
 		to_print = nick + " JOINED CHANNEL " + channel + "\n";
+		std::cout << to_magenta(to_print);
+
+	} else if (msg.find("TOPIC") != std::string::npos) {
+		// <nick>!<user>@<user-ip> TOPIC <channel> :<new-topic>
+
+		std::size_t found = msg.find("!");
+		std::string nick = msg.substr(0, found);
+		std::string delim = " TOPIC " + _channel_name + " :";
+		found = msg.find(delim);
+		std::string new_topic = msg.substr(found + delim.size(), std::string::npos);
+
+		_channel_topic = new_topic;
+
+		to_print = nick + " CHANGED TOPIC TO: " + _channel_topic + "\n";
 		std::cout << to_magenta(to_print);
 	} else {
 		std::string reply = "ERROR, unrecognized message or buffer overflow\n"
@@ -194,65 +215,115 @@ void parse_session_msg(std::string msg)
 	}
 }
 
+void Client::handle_topic_request()
+{
+	std::string to_client;
+	to_client = std::string("\n")
+		  + "##########################\n"
+	          + "Do you want to SHOW or SET the topic?\n"
+	          + "Type SHOW or SET for the respective option\n";
+	std::cout << to_blue(to_client);
+
+	std::string resp;
+	getline(std::cin, resp);
+
+	if (resp == "SHOW") {
+		to_client = std::string("\n")
+			  + "##########################\n"
+			  + _user.get_chan() + " Topic:\n"
+			  + _channel_topic + "\n\n";
+		std::cout << to_blue(to_client);
+	} else if (resp == "SET") {
+		//@TODO: still not finished with this
+		to_client = std::string("\n")
+			  + "##########################\n"
+			  + "Please type in the channel's new topic:\n";
+		std::cout << to_blue(to_client);
+
+		getline(std::cin, resp);
+
+		std::string topic_msg;
+		topic_msg = "TOPIC " + _user.get_chan()
+			  + " :" + resp + "\r\n";
+		try_writing(topic_msg);
+
+		std::string reply = try_reading();
+		_channel_topic = parse_topic_msg(reply);
+
+		to_client = std::string("\n")
+		    	  + "##########################\n"
+		    	  + _user.get_chan() + " Topic:\n"
+		          + _channel_topic + "\n";
+		std::cout << to_blue(to_client);
+
+	} else {
+		std::cout << to_blue("Sorry that wasn't an option\n");
+	}
+}
+
 // return true if need to quit
-bool parse_user_input(tcp::socket& sock, std::string msg, std::string channel)
+bool Client::parse_user_input(std::string msg)
 {
 	if (msg == "") {
 		return false;
 	} else if (msg == "EXIT") {
-		std::string part_msg = "PART " + channel + "\r\n";
+		std::string part_msg = "PART " + _user.get_chan() + "\r\n";
 		// ignoring :<part-msg>
-		try_writing(sock, part_msg);
+		try_writing(part_msg);
 		return true;
 	} else if (msg == "HELP") {
 		std::string to_client;
 		to_client = std::string("options...\n")
+			  + "TOPIC: SET or SHOW the current chat topic\n"
 		          + "EXIT: exit the client\n"
 		          + "HELP: print this dialog\n";
 		std::cout << to_blue(to_client);
 		return false;
+	} else if (msg == "TOPIC") {
+		handle_topic_request();
+		return false;
 	} else {
 		std::string priv_msg;
-		priv_msg = "PRIVMSG " + channel
+		priv_msg = "PRIVMSG " + _user.get_chan()
 		         + " :" + msg + "\r\n";
-		try_writing(sock, priv_msg);
+		try_writing(priv_msg);
 		return false;
 	}
 }
 
-int main(int argc, char **argv)
+void Client::set_sock(boost::asio::io_service& ios)
 {
-	if (argc != 3) {
-		std::cout << "Usage: ./client <server-ip> <server-port>\n";
-		return -1;
-	}
-	std::ios_base::sync_with_stdio(false);
-	std::cout << "Starting client...\n";
-	std::string serv_ip = argv[1];
-	int serv_port = std::stoi(argv[2]);
+	_sockptr = std::make_unique<tcp::socket>(ios);
+}
 
-	// might need to add support for strings other than localhost
-	if (serv_ip == "localhost")
-		serv_ip = "127.0.0.1";
+void Client::run(std::string serv_ip, std::string port)
+{
+	try {
+		std::ios_base::sync_with_stdio(false);
+		std::cout << "Starting client...\n";
+		int serv_port = std::stoi(port);
 
-	try
-	{
-		User this_user = query_and_create();
+		// might need to add support for strings other than localhost
+		if (serv_ip == "localhost")
+			serv_ip = "127.0.0.1";
+
+		query_and_create();
 
 		boost::asio::io_service io_service;
 		tcp::endpoint endpoint(
 				boost::asio::ip::address_v4::from_string(serv_ip),
 				serv_port);
-		tcp::socket serv_sock(io_service);
-		// @TODO: use RAII to have this socket close on destruction
-		// although, tbh I think that boost sockets close connection on destruction.
+		//tcp::socket serv_sock(io_service);
+		set_sock(io_service);
 
-		serv_sock.connect(endpoint);
+		//serv_sock.connect(endpoint);
+		_sockptr->connect(endpoint);
 
-		pass_user_info_to_server(this_user, serv_sock);
+		pass_user_info_to_server();
 
-		std::string channel = connect_to_channel(serv_sock);
-		this_user.set_channel(channel);
+		std::string channel = connect_to_channel();
+		_user.set_channel(channel);
+		_channel_name = channel;
 
 		std::string msg;
 		msg = std::string("\n")
@@ -262,21 +333,21 @@ int main(int argc, char **argv)
 		    + "EXIT<ENTER>\n"
 		    + "Type HELP and press <ENTER> to find out more\n"
 		    + "HELP<ENTER>\n"
-		    + "Have fun :)\n";
+		    + "Have fun :)\n\n";
 		std::cout << to_blue(msg);
 
 		bool quit = false;
 		while (!quit) {
-			update(serv_sock);
+			update();
 
-			for (auto& msg : sock_msgs)
+			for (auto& msg : _sock_msgs)
 				parse_session_msg(msg);
-			sock_msgs.clear();
+			_sock_msgs.clear();
 
-			std::cout << to_cyan(this_user.get_nick() + ": ");
+			std::cout << to_cyan(_user.get_nick() + ": ");
 			getline(std::cin, msg);
 
-			quit = parse_user_input(serv_sock, msg, this_user.get_chan());
+			quit = parse_user_input(msg);
 		}
 
 	}
@@ -288,6 +359,4 @@ int main(int argc, char **argv)
 	{
 		std::cout << "Unrecognized error\n";
 	}
-
-	return 0;
 }
