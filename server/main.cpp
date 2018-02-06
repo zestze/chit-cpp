@@ -9,7 +9,7 @@
 int main(int argc, char **argv)
 {
 	if (argc != 2) {
-		std::cout << "Usage: ./server <server-port>\n";
+		std::cerr << "Usage: ./main <server-port>\n";
 		return -1;
 	}
 	int port = atoi(argv[1]);
