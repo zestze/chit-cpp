@@ -44,23 +44,7 @@ using Chan_newusers_ptr = std::map<std::string, std::deque<std::tuple<User,
 
 class Servlet {
 	public:
-		/*
-		 * UNFINISHED
-		 */
-		Servlet()
-		{
-			_channel_name = "";
-			_topic = "DEFAULT TOPIC";
-		}
-
-		/*
-		 * UNFINISHED
-		 */
-		Servlet(std::string c)
-			:_channel_name{c}
-		{
-			_topic = "DEFAULT TOPIC";
-		}
+		Servlet() = delete;
 
 		/*
 		 * This looks gross.
@@ -74,28 +58,11 @@ class Servlet {
 		}
 
 		/*
-		 * SHOULD ONLY BE USED BFORE ADDING ANY USERS OR SOCKETS
 		 */
-		Servlet(Servlet& other)
-		{
-			_channel_name = other._channel_name;
-			_topic = other._topic;
-		}
+		Servlet(const Servlet& other) = delete;
 
-		/*
-		 */
-		// DON'T USE LET COMPILER GENERATE DEFAULT DESTRUCTOR
-		/*
-		~Servlet()
-		{
-		}
-		*/
+		~Servlet() = default;
 
-		// member modifiers
-		//void set_topic(std::string new_t) { _topic = new_t; }
-
-		// member accessors
-		// kind of deprecated...
 		/*
 		std::string get_chan() { return _channel_name; }
 		std::string get_topic() { return _topic; }

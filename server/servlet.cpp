@@ -51,7 +51,7 @@ std::deque<User> Servlet::grab_new()
 	auto& global_socks = *_global_socks_ptr;
 
 	// get the new user, and their messages read from socket thus far
-	std::unique_lock<std::mutex> lck(gl_lock);
+	std::lock_guard<std::mutex> lck(gl_lock);
 	std::string chan = _channel_name;
 	std::deque<User> newusers;
 
@@ -155,16 +155,6 @@ bool Servlet::check_newusers(std::shared_ptr<std::atomic<bool>>& notify)
 		return true;
 	else
 		return false;
-	/*
-	auto& gl_lock = *_gl_lock_ptr;
-	auto& chan_newusers = *_chan_newusers_ptr;
-
-	std::unique_lock<std::mutex> lck(gl_lock);
-	if (chan_newusers.count(_channel_name) && !chan_newusers[_channel_name].empty())
-		return true;
-	else
-		return false;
-		*/
 }
 
 bool Servlet::check_endmsgs()

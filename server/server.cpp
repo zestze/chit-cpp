@@ -72,72 +72,72 @@ std::string Server::get_channel_name(tcp::socket& sock)
 	return channel;
 }
 
+void Server::update_comm_structs(User& u, std::deque<std::string>& msgs,
+		tcp::socket& sock)
+{
+	std::lock_guard<std::mutex> lock(_comms_lock);
+	_chan_newusers_map[u.get_chan()].push_back(std::make_tuple(u, msgs));
+	_socks_deq.push_back(std::move(sock));
+	// don't use sock after this
+}
+
+void Server::inner_scope_run(boost::asio::io_service& io_service,
+		tcp::acceptor& acceptor)
+{
+	tcp::socket sock(io_service);
+	boost::system::error_code ec;
+	acceptor.accept(sock, ec);
+	if (ec == boost::asio::error::would_block)
+		return;
+
+	User client (register_session(sock));
+	std::string channel (get_channel_name(sock));
+	client.set_channel(channel);
+
+	// move any received messages over, just in case there are any
+	// added reference for clarity
+	auto& client_msgs = _end_msgs[sock.remote_endpoint()];
+	std::deque<std::string> temp_msgs (client_msgs);
+	_end_msgs.erase(sock.remote_endpoint());
+
+	update_comm_structs(client, temp_msgs, sock);
+	// don't user sock after this
+
+	_notify_of_newusers.update(channel);
+
+	if (!_threads.count(channel)) {
+		std::thread thr(thread_run,
+				channel,
+				&_chan_newusers_map,
+				&_socks_deq,
+				&_comms_lock,
+				_notify_of_newusers.pass_ptr(channel));
+		_threads[channel] = std::move(thr);
+	}
+}
+
 void Server::run(int listen_port)
 {
-	std::ios_base::sync_with_stdio(false);
-	std::cout << "Starting server...\n";
-	std::cout << "Type CTRL+C to quit" << std::endl;
+	try {
+		std::ios_base::sync_with_stdio(false);
+		std::cout << "Starting server...\n";
+		std::cout << "Type CTRL+C to quit" << std::endl;
 
-	//set_globals();
-	set_globals();
-	std::signal(SIGINT, signal_handler);
+		//set_globals();
+		set_globals();
+		std::signal(SIGINT, signal_handler);
 
-	std::map<std::string, std::deque<std::tuple<User, std::deque<std::string>
-		>>> chan_newusers;
-	std::deque<tcp::socket> global_socks;
-	std::mutex gl_lock;
-
-	Notifier notif_of_new_users;
-
-	std::map<std::string, std::thread> threads;
-	try
-	{
 		boost::asio::io_service io_service;
 		tcp::acceptor acceptor(io_service,
 				tcp::endpoint(tcp::v4(), listen_port));
 		acceptor.non_blocking(true);
 
 		while (!killself) {
-
-			tcp::socket sock(io_service);
-			boost::system::error_code ec;
-			acceptor.accept(sock, ec);
-			if (ec == boost::asio::error::would_block)
-				continue;
-
-			User client = register_session(sock);
-
-			std::string channel = get_channel_name(sock);
-			client.set_channel(channel);
-
-			// move any received messages over, just in case
-			std::deque<std::string> temp_msgs;
-			for (auto& msg : _end_msgs[sock.remote_endpoint()])
-				temp_msgs.push_back(msg);
-			_end_msgs.erase(sock.remote_endpoint());
-
-			{
-				std::unique_lock<std::mutex> lck(gl_lock);
-				chan_newusers[channel].push_back(std::make_tuple(client,
-							temp_msgs));
-				global_socks.push_back(std::move(sock));
-			}
-
-			notif_of_new_users.update(channel);
-
-			if (!threads.count(channel)) {
-				std::thread thr(thread_run,
-						channel,
-						&chan_newusers,
-						&global_socks,
-						&gl_lock,
-						notif_of_new_users.pass_ptr(channel));
-				threads[channel] = std::move(thr);
-			}
+			inner_scope_run(io_service, acceptor);
 		}
 
-		std::cout << "got signal to killself, going to cleanup threads\n";
-		for (auto& t : threads)
+		std::cout << "\ngot signal to killself, going to cleanup _threads\n";
+		for (auto& t : _threads)
 			t.second.join();
 	}
 	catch (const std::exception& e)
@@ -145,7 +145,7 @@ void Server::run(int listen_port)
 		std::cout << e.what() << "\n";
 
 		killself = true; // atomic
-		for (auto& t : threads)
+		for (auto& t : _threads)
 			t.second.join();
 	}
 }

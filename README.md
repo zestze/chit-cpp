@@ -49,7 +49,7 @@ the server side, similarly follow the output and type `CTRL+C`
 - [ ] move consts_globs etc header extern definitions into it's own definition. Globals like that
 	are a bad idea
 - [ ] move atomic killself to private variable of server
-- [ ] Make a notifier class that wraps a map, with [@key: channel_name, @value: pointer to
+- [x] Make a notifier class that wraps a map, with [@key: channel_name, @value: pointer to
 	atomic<bool>]. For each channel, use 'new' to make an atomic bool on the heap, and
 	store a pointer to it. When starting the channel servlet, pass the [@value: pointer]
 	and use the pointer to communicate if a user was added or not.
@@ -72,5 +72,5 @@ the server side, similarly follow the output and type `CTRL+C`
 - [ ] Maintain state: user profiles, chat history log, etc.
 - [ ] Implement time-out mechanism on read, to account for broken connections
 - [ ] Handle broken pipe exceptions, and implement a prioritize PART messages
-- [ ] Use RW Locks for quicker access to global variables, maybe user atomic checkVars
+- [x] Use RW Locks for quicker access to global variables, maybe user atomic checkVars
 - [ ] On client side, use different colors for different users?

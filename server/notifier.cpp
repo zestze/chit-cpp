@@ -30,20 +30,3 @@ void Notifier::give_state()
 		std::cout << *it.second << "\n";
 	}
 }
-
-/*
-int main()
-{
-	std::cout << "It's working?\n";
-	Notifier notif;
-	std::string channel = "blah";
-	notif.update(channel);
-	notif.give_state();
-
-	std::shared_ptr<std::atomic<bool>> s_ptr = notif.pass_ptr(channel);
-	*s_ptr = false;
-
-	notif.give_state();
-	return 0;
-}
-*/

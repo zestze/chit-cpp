@@ -4,9 +4,6 @@
  * Zeke Reyna
  *
  * @TODO: give descriptions for each method
- *
- * @TODO: change into a class-based server
- * and write a main function
  */
 
 #ifndef __SERVER_H__
@@ -56,10 +53,33 @@ class Server {
 
 		/*
 		 */
+		void update_comm_structs(User& u, std::deque<std::string>& msgs,
+				tcp::socket& sock);
+
+		/*
+		 */
+		void inner_scope_run(boost::asio::io_service& io_service,
+				tcp::acceptor& acceptor);
+
+		/*
+		 */
 		void run(int listen_port);
 
 	private:
 		std::map<tcp::endpoint, std::deque<std::string>> _end_msgs;
+
+		// these are for passing info to threads
+		std::map<std::string, std::deque<std::tuple<User, std::deque<
+			std::string>>>> _chan_newusers_map;
+
+		std::deque<tcp::socket> _socks_deq;
+
+		std::mutex _comms_lock;
+
+		Notifier _notify_of_newusers;
+		// these are for passing info to threads
+
+		std::map<std::string, std::thread> _threads;
 
 };
 
