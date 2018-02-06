@@ -35,6 +35,7 @@
 #include <map>
 #include <csignal>
 #include <mutex>
+#include <memory>
 
 using boost::asio::ip::tcp;
 
@@ -154,7 +155,7 @@ class Servlet {
 		 * Return TRUE if so,
 		 * Return FALSE otherwise.
 		 */
-		bool check_newusers();
+		bool check_newusers(std::shared_ptr<std::atomic<bool>>& notify);
 
 		/*
 		 * Check if there are messages in _end_msgs that need handling.
@@ -196,5 +197,6 @@ class Servlet {
 /*
  */
 void thread_run(std::string channel, Chan_newusers_ptr chan_newusers_ptr,
-	 std::deque<tcp::socket> *global_socks_ptr, std::mutex *gl_lock_ptr);
+	 std::deque<tcp::socket> *global_socks_ptr, std::mutex *gl_lock_ptr,
+	 std::shared_ptr<std::atomic<bool>> notify);
 #endif

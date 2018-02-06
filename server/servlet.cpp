@@ -149,8 +149,13 @@ void Servlet::handle_newusers()
 	}
 }
 
-bool Servlet::check_newusers()
+bool Servlet::check_newusers(std::shared_ptr<std::atomic<bool>>& notify)
 {
+	if (*notify)
+		return true;
+	else
+		return false;
+	/*
 	auto& gl_lock = *_gl_lock_ptr;
 	auto& chan_newusers = *_chan_newusers_ptr;
 
@@ -159,6 +164,7 @@ bool Servlet::check_newusers()
 		return true;
 	else
 		return false;
+		*/
 }
 
 bool Servlet::check_endmsgs()
@@ -265,12 +271,13 @@ void Servlet::handle_endmsgs()
 }
 
 void thread_run(std::string channel, Chan_newusers_ptr chan_newusers_ptr,
-	 std::deque<tcp::socket> *global_socks_ptr, std::mutex *gl_lock_ptr)
+	 std::deque<tcp::socket> *global_socks_ptr, std::mutex *gl_lock_ptr,
+	 std::shared_ptr<std::atomic<bool>> notify)
 {
 	try {
 		Servlet servlet(channel, chan_newusers_ptr, global_socks_ptr, gl_lock_ptr);
 		while (!killself) {
-			bool check = servlet.check_newusers();
+			bool check = servlet.check_newusers(notify);
 			if (check)
 				servlet.handle_newusers();
 

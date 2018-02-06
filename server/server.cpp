@@ -41,7 +41,6 @@ User Server::register_session(tcp::socket& sock)
 
 	msg = try_reading(sock);
 	// "USER <user-name> * * :<real-name>"
-	std::cout << "MSG: " << msg << "\n";
 	std::deque<std::string> parts = split_(msg, " * * :");
 
 	std::string part1, part2;
@@ -88,6 +87,8 @@ void Server::run(int listen_port)
 	std::deque<tcp::socket> global_socks;
 	std::mutex gl_lock;
 
+	Notifier notif_of_new_users;
+
 	std::map<std::string, std::thread> threads;
 	try
 	{
@@ -109,6 +110,7 @@ void Server::run(int listen_port)
 			std::string channel = get_channel_name(sock);
 			client.set_channel(channel);
 
+			// move any received messages over, just in case
 			std::deque<std::string> temp_msgs;
 			for (auto& msg : _end_msgs[sock.remote_endpoint()])
 				temp_msgs.push_back(msg);
@@ -121,12 +123,15 @@ void Server::run(int listen_port)
 				global_socks.push_back(std::move(sock));
 			}
 
+			notif_of_new_users.update(channel);
+
 			if (!threads.count(channel)) {
 				std::thread thr(thread_run,
 						channel,
 						&chan_newusers,
 						&global_socks,
-						&gl_lock);
+						&gl_lock,
+						notif_of_new_users.pass_ptr(channel));
 				threads[channel] = std::move(thr);
 			}
 		}

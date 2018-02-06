@@ -16,6 +16,7 @@
 #include "servlet.h"
 #include "user.h"
 #include "../libs/sockio.h"
+#include "notifier.h"
 
 #include <iostream>
 #include <string>
