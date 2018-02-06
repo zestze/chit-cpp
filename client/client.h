@@ -38,6 +38,12 @@ void update(tcp::socket& sock);
 
 /*
  */
+std::string inline to_blue(std::string msg) {
+	return "\033[1;34m" + msg + "\033[0m";
+}
+
+/*
+ */
 std::string inline to_cyan(std::string msg) {
 	return "\033[1;36m" + msg + "\033[0m";
 }

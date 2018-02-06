@@ -37,7 +37,7 @@ User query_and_create()
 	    + "Note: these are reserved characters that cannot be used:\n"
 	    + ": ! @\n\n"
 	    + "What is your nickname?\n";
-	std::cout << to_cyan(msg);
+	std::cout << to_blue(msg);
 
 	std::string nick;
 	getline(std::cin, nick);
@@ -49,7 +49,7 @@ User query_and_create()
 	std::string user(pw->pw_name);
 
 	msg  = "What is your real name?\n";
-	std::cout << to_cyan(msg);
+	std::cout << to_blue(msg);
 	std::string real;
 	getline(std::cin, real);
 
@@ -104,7 +104,7 @@ std::string connect_to_channel(tcp::socket& sock)
 	msg = std::string("\n")
 	    + "##########################\n"
 	    + "What #channel would you like to join?\n";
-	std::cout << to_cyan(msg);
+	std::cout << to_blue(msg);
 
 	std::string channel;
 	getline(std::cin, channel);
@@ -125,7 +125,7 @@ std::string connect_to_channel(tcp::socket& sock)
 	msg = std::string("\n")
 	    + "##########################\n"
 	    + "Successfully connected to " + channel + "\n";
-	std::cout << to_cyan(msg);
+	std::cout << to_blue(msg);
 
 	// should get TOPIC
 	reply = try_reading(sock);
@@ -136,7 +136,7 @@ std::string connect_to_channel(tcp::socket& sock)
 	    + "##########################\n"
 	    + channel + " Topic:\n"
 	    + parse_topic_msg(reply) + "\n";
-	std::cout << to_cyan(msg);
+	std::cout << to_blue(msg);
 
 	// should get LIST of users
 	reply = try_reading(sock);
@@ -147,7 +147,7 @@ std::string connect_to_channel(tcp::socket& sock)
 	    + "##########################\n"
 	    + channel + " Users:\n"
 	    + parse_user_list_msg(reply) + "\n";
-	std::cout << to_cyan(msg);
+	std::cout << to_blue(msg);
 
 	// should get END OF NAMES
 	reply = try_reading(sock);
@@ -209,7 +209,7 @@ bool parse_user_input(tcp::socket& sock, std::string msg, std::string channel)
 		to_client = std::string("options...\n")
 		          + "EXIT: exit the client\n"
 		          + "HELP: print this dialog\n";
-		std::cout << to_cyan(to_client);
+		std::cout << to_blue(to_client);
 		return false;
 	} else {
 		std::string priv_msg;
@@ -263,7 +263,7 @@ int main(int argc, char **argv)
 		    + "Type HELP and press <ENTER> to find out more\n"
 		    + "HELP<ENTER>\n"
 		    + "Have fun :)\n";
-		std::cout << to_cyan(msg);
+		std::cout << to_blue(msg);
 
 		bool quit = false;
 		while (!quit) {
