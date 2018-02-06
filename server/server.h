@@ -15,6 +15,7 @@
 #include "consts_globs_shared.h"
 #include "servlet.h"
 #include "user.h"
+#include "../libs/sockio.h"
 
 #include <iostream>
 #include <string>
@@ -29,25 +30,36 @@
 
 using boost::asio::ip::tcp;
 
-/*
- */
-std::string try_reading(tcp::socket& sock);
+class Server {
 
-/*
- */
-void try_writing(tcp::socket& sock, std::string msg);
+	public:
+		/*
+		 */
+		void set_globals() { killself = false; }
 
-/*
- */
-User register_session(tcp::socket& sock);
+		/*
+		 */
+		std::string try_reading(tcp::socket& sock);
 
-/*
- */
-std::string get_channel_name(tcp::socket& sock);
+		/*
+		 */
+		void try_writing(tcp::socket& sock, std::string msg);
 
-/*
- */
+		/*
+		 */
+		User register_session(tcp::socket& sock);
 
-std::map<tcp::endpoint, std::deque<std::string>> end_msgs;
+		/*
+		 */
+		std::string get_channel_name(tcp::socket& sock);
+
+		/*
+		 */
+		void run(int listen_port);
+
+	private:
+		std::map<tcp::endpoint, std::deque<std::string>> _end_msgs;
+
+};
 
 #endif

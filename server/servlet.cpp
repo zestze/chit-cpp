@@ -5,7 +5,6 @@
  */
 
 #include "servlet.h"
-#include "../libs/sockio.h"
 
 std::deque<tcp::socket>::iterator Servlet::get_sock_for_user(User user)
 {
@@ -265,7 +264,7 @@ void Servlet::handle_endmsgs()
 	}
 }
 
-void run(std::string channel, Chan_newusers_ptr chan_newusers_ptr,
+void thread_run(std::string channel, Chan_newusers_ptr chan_newusers_ptr,
 	 std::deque<tcp::socket> *global_socks_ptr, std::mutex *gl_lock_ptr)
 {
 	try {

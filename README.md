@@ -44,6 +44,15 @@ the server side, similarly follow the output and type `CTRL+C`
 
 ## Features to Implement
 
+- [x] Put server methods into a class, and organize a bit.
+- [ ] Move 'using' declarations into class namespaces
+- [ ] move consts_globs etc header extern definitions into it's own definition. Globals like that
+	are a bad idea
+- [ ] move atomic killself to private variable of server
+- [ ] Make a notifier class that wraps a map, with [@key: channel_name, @value: pointer to
+	atomic<bool>]. For each channel, use 'new' to make an atomic bool on the heap, and
+	store a pointer to it. When starting the channel servlet, pass the [@value: pointer]
+	and use the pointer to communicate if a user was added or not.
 - [x] Get rid of globals - make a map of [cahannel_name, deque_of_stuff_
 	to_pass] and make it global to main() function.
 	Pass a ptr to each thread as their created, and a copy of the

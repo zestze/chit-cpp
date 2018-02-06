@@ -9,23 +9,14 @@
 #ifndef __CONSTS_GLOBS_SHARED_H__
 #define __CONSTS_GLOBS_SHARED_H__
 
-#include "user.h"
-
 #include <string>
 #include <atomic>
-#include <map>
-#include <deque>
-#include <mutex>
-#include <tuple>
-#include <boost/asio.hpp>
-
-using boost::asio::ip::tcp;
 
 // *************** constants ************
-extern std::string RPL_WELCOME;
-extern std::string RPL_TOPIC;
-extern std::string RPL_NAMREPLY;
-extern std::string RPL_ENDOFNAMES;
+const std::string RPL_WELCOME = "001";
+const std::string RPL_TOPIC = "332";
+const std::string RPL_NAMREPLY = "252";
+const std::string RPL_ENDOFNAMES = "366";
 
 // *************** shared ****************
 // for purpose of telling threads to exit

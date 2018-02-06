@@ -1,4 +1,4 @@
-TARGET 		= server
+TARGET 		= main
 CC 		= g++
 CXX 		= g++
 INCLUDES 	= -I../libs/
@@ -8,6 +8,8 @@ LDFLAGS 	= -g -pthread -L../libs/
 LDLIBS 		= -lboost_system -lsockio
 
 $(TARGET): server.o servlet.o
+
+$(TARGET).o: server.h
 
 server.o: user.h servlet.h consts_globs_shared.h
 

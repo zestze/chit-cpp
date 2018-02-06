@@ -26,6 +26,7 @@
 
 #include "user.h"
 #include "consts_globs_shared.h"
+#include "../libs/sockio.h"
 
 #include <string>
 #include <iostream>
@@ -33,7 +34,7 @@
 #include <array>
 #include <map>
 #include <csignal>
-#include <boost/algorithm/string.hpp>
+#include <mutex>
 
 using boost::asio::ip::tcp;
 
@@ -194,6 +195,6 @@ class Servlet {
 
 /*
  */
-void run(std::string channel, Chan_newusers_ptr chan_newusers_ptr,
+void thread_run(std::string channel, Chan_newusers_ptr chan_newusers_ptr,
 	 std::deque<tcp::socket> *global_socks_ptr, std::mutex *gl_lock_ptr);
 #endif

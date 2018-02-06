@@ -8,14 +8,8 @@
  */
 
 #include "server.h"
-#include "../libs/sockio.h"
 
 // ************ GLOBALS ****************
-std::string RPL_WELCOME;
-std::string RPL_TOPIC;
-std::string RPL_NAMREPLY;
-std::string RPL_ENDOFNAMES;
-
 std::atomic<bool> killself;
 // ************ GLOBALS ****************
 
@@ -25,21 +19,21 @@ void signal_handler(int signal)
 		killself = true;
 }
 
-std::string try_reading(tcp::socket& sock)
+std::string Server::try_reading(tcp::socket& sock)
 {
 	tcp::endpoint end = sock.remote_endpoint();
-	if (!end_msgs.count(end))
-		end_msgs[end]; // instantiate bc i'm nervous
-	std::deque<std::string>& sock_msgs = end_msgs[end];
+	if (!_end_msgs.count(end))
+		_end_msgs[end]; // instantiate bc i'm nervous
+	std::deque<std::string>& sock_msgs = _end_msgs[end];
 	return try_reading_from_sock(sock, sock_msgs);
 }
 
-void try_writing(tcp::socket& sock, std::string msg)
+void Server::try_writing(tcp::socket& sock, std::string msg)
 {
 	try_writing_to_sock(sock, msg);
 }
 
-User register_session(tcp::socket& sock)
+User Server::register_session(tcp::socket& sock)
 {
 	std::string msg = try_reading(sock);
 	// "NICK <nick>"
@@ -72,34 +66,20 @@ User register_session(tcp::socket& sock)
 	return client;
 }
 
-std::string get_channel_name(tcp::socket& sock)
+std::string Server::get_channel_name(tcp::socket& sock)
 {
 	std::string msg = try_reading(sock);
 	std::string channel = msg.substr(5, std::string::npos);
 	return channel;
 }
 
-void set_globals()
+void Server::run(int listen_port)
 {
-	RPL_WELCOME    = "001";
-	RPL_TOPIC      = "332";
-	RPL_NAMREPLY   = "252";
-	RPL_ENDOFNAMES = "366";
-
-	killself = false;
-}
-
-int main(int argc, char **argv)
-{
-	if (argc != 2) {
-		std::cout << "Usage: ./server <server-port>\n";
-		return -1;
-	}
 	std::ios_base::sync_with_stdio(false);
 	std::cout << "Starting server...\n";
 	std::cout << "Type CTRL+C to quit" << std::endl;
-	int listen_port = std::stoi(argv[1]);
 
+	//set_globals();
 	set_globals();
 	std::signal(SIGINT, signal_handler);
 
@@ -130,9 +110,9 @@ int main(int argc, char **argv)
 			client.set_channel(channel);
 
 			std::deque<std::string> temp_msgs;
-			for (auto& msg : end_msgs[sock.remote_endpoint()])
+			for (auto& msg : _end_msgs[sock.remote_endpoint()])
 				temp_msgs.push_back(msg);
-			end_msgs.erase(sock.remote_endpoint());
+			_end_msgs.erase(sock.remote_endpoint());
 
 			{
 				std::unique_lock<std::mutex> lck(gl_lock);
@@ -142,7 +122,7 @@ int main(int argc, char **argv)
 			}
 
 			if (!threads.count(channel)) {
-				std::thread thr(run,
+				std::thread thr(thread_run,
 						channel,
 						&chan_newusers,
 						&global_socks,
@@ -162,7 +142,5 @@ int main(int argc, char **argv)
 		killself = true; // atomic
 		for (auto& t : threads)
 			t.second.join();
-		return -1;
 	}
-	return 0;
 }
