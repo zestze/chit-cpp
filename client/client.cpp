@@ -273,10 +273,12 @@ bool Client::parse_user_input(std::string msg)
 		return true;
 	} else if (msg == "HELP") {
 		std::string to_client;
-		to_client = std::string("options...\n")
+		to_client = std::string("\n")
+			  + "##########################\n"
+			  + "options...\n"
 			  + "TOPIC: SET or SHOW the current chat topic\n"
 		          + "EXIT: exit the client\n"
-		          + "HELP: print this dialog\n";
+		          + "HELP: print this dialog\n\n";
 		std::cout << to_blue(to_client);
 		return false;
 	} else if (msg == "TOPIC") {
