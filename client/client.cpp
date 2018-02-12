@@ -247,17 +247,6 @@ void Client::handle_topic_request()
 			  + " :" + resp + "\r\n";
 		try_writing(topic_msg);
 
-		/*
-		std::string reply = try_reading();
-		_channel_topic = parse_topic_msg(reply);
-
-		to_client = std::string("\n")
-		    	  + "##########################\n"
-		    	  + _user.get_chan() + " Topic:\n"
-		          + _channel_topic + "\n";
-		std::cout << to_blue(to_client);
-		*/
-
 	} else {
 		std::cout << to_blue("Sorry that wasn't an option\n");
 	}

@@ -261,34 +261,14 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 		const tcp::socket& sock = _socks.front();
 		const std::string locIP = sock.local_endpoint().address().to_string();
 
-		/*
-		std::string reply = locIP + " " + RPL_TOPIC + " "
-			          + modified.get_nick() + " " + _channel_name
-				  + " :" + _channel_topic + "\r\n";
-		try_writing(modified, reply);
-		*/
-
 		std::string reply;
 		reply = modified.get_nick() + "!" + modified.get_user() + "@"
 		      + modified.get_endpt().address().to_string()
 		      + " TOPIC " + _channel_name + " :"
 		      + _channel_topic + "\r\n";
 
-		for (auto& u : _users) {
-			/*
-			if (u.get_endpt() == modified.get_endpt())
-				continue;
-				*/
-
-			/*
-			reply = modified.get_nick() + "!" + modified.get_user() + "@"
-			      + modified.get_endpt().address().to_string()
-			      + " TOPIC " + _channel_name + " :"
-			      + _channel_topic + "\r\n";
-			      */
-
+		for (auto& u : _users)
 			try_writing(u, reply);
-		}
 
 	} else {
 		std::cout << "Unrecognized Message:\n";
