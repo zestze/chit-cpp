@@ -62,10 +62,10 @@ the server side, similarly follow the output and type `CTRL+C`
 	else, parse map and grab relevant [key, val] pair?
 	Kind of unecessary, just check if val is empty.
 - [x] Put extern globals in their own namespace or something.
-- [ ] For errors print to std::cerr and for other info print to std::cout
+- [x] For errors print to std::cerr and for other info print to std::cout
 - [ ] Can use structured bindings, "auto [el1, el2... ] = get_tuple(...)" when grabbing tuples
 - [ ] Grab elements from tuple by calling get<type> rather than get<indx>
-- [ ] Change unique_lock to scoped_lock (C++17) or lock_guard
+- [x] Change unique_lock to scoped_lock (C++17) or lock_guard
 - [x] Call "ios_base::sync_with_stdio(falste);" in functions using I/O to reduce overhead
 - [ ] Check server.h and sockio.cpp for curr changes to implement
 - [ ] "Modes" for users that limit actions

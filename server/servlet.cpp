@@ -271,10 +271,10 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 			try_writing(u, reply);
 
 	} else {
-		std::cout << "Unrecognized Message:\n";
-		std::cout << "Msg begin: ";
-		std::cout << msg << "\n";
-		std::cout << "Msg end";
+		std::cerr << "Unrecognized Message:\n";
+		std::cerr << "Msg begin: ";
+		std::cerr << msg << "\n";
+		std::cerr << "Msg end";
 		throw std::invalid_argument("Unrecognized message format");
 	}
 }
@@ -315,7 +315,7 @@ void thread_run(std::string channel, Chan_newusers_ptr chan_newusers_ptr,
 		// implicitly by destructor call.
 		std::cout << "Thread exiting\n";
 	} catch (const std::exception& e) {
-		std::cout << "There was an error:\n";
-		std::cout << e.what() << std::endl;
+		std::cerr << "There was an error:\n";
+		std::cerr << e.what() << std::endl;
 	}
 }

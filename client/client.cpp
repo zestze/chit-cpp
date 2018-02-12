@@ -234,7 +234,6 @@ void Client::handle_topic_request()
 			  + _channel_topic + "\n\n";
 		std::cout << to_blue(to_client);
 	} else if (resp == "SET") {
-		//@TODO: still not finished with this
 		to_client = std::string("\n")
 			  + "##########################\n"
 			  + "Please type in the channel's new topic:\n";
@@ -346,10 +345,6 @@ void Client::run(std::string serv_ip, std::string port)
 	}
 	catch (const std::exception& e)
 	{
-		std::cout << e.what() << "\n";
-	}
-	catch (...)
-	{
-		std::cout << "Unrecognized error\n";
+		std::cerr << e.what() << "\n";
 	}
 }

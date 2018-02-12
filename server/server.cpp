@@ -142,7 +142,7 @@ void Server::run(int listen_port)
 	}
 	catch (const std::exception& e)
 	{
-		std::cout << e.what() << "\n";
+		std::cerr << e.what() << "\n";
 
 		killself = true; // atomic
 		for (auto& t : _threads)
