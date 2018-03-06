@@ -19,9 +19,11 @@
 
 using boost::asio::ip::tcp;
 
+namespace sockio {
+
 /*
  */
-std::deque<std::string> split_(std::string full_msg, std::string delim);
+std::deque<std::string> split(std::string full_msg, std::string delim);
 
 /*
  */
@@ -34,5 +36,7 @@ void try_writing_to_sock(tcp::socket& sock, std::string msg);
 /*
  */
 void update_sockmsgs(tcp::socket& sock, std::deque<std::string>& sock_msgs);
+
+};
 
 #endif

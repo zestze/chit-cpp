@@ -1,10 +1,10 @@
 TARGET 		= sockio
 LIBTARG         = libsockio
-CC 		= g++
-CXX 		= g++
+CC 		= clang++-5.0
+CXX 		= clang++-5.0
 INCLUDES 	=
 CFLAGS 		= -g -Wall $(INCLUDES)
-CXXFLAGS 	= -g -Wall $(INCLUDES) -std=c++11
+CXXFLAGS 	= -g -Wall $(INCLUDES) -std=c++17
 LDFLAGS 	= -g
 LDLIBS 		= -lboost_system
 

@@ -1,9 +1,9 @@
 TARGET 		= main
-CC 		= g++
-CXX 		= g++
+CC 		= clang++-5.0
+CXX 		= clang++-5.0
 INCLUDES 	= -I../libs/
 CFLAGS 		= -g -Wall $(INCLUDES)
-CXXFLAGS 	= -g -Wall $(INCLUDES) -std=c++14 -pthread -O2
+CXXFLAGS 	= -g -Wall $(INCLUDES) -std=c++17 -pthread -O2
 LDFLAGS 	= -g -pthread -L../libs/
 LDLIBS 		= -lboost_system -lsockio
 

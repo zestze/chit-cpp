@@ -16,17 +16,17 @@ bool DEBUG = false;
 
 std::string Client::try_reading()
 {
-	return try_reading_from_sock(*_sockptr, _sock_msgs);
+	return sockio::try_reading_from_sock(*_sockptr, _sock_msgs);
 }
 
 void Client::try_writing(std::string msg)
 {
-	try_writing_to_sock(*_sockptr, msg);
+	sockio::try_writing_to_sock(*_sockptr, msg);
 }
 
 void Client::update()
 {
-	update_sockmsgs(*_sockptr, _sock_msgs);
+	sockio::update_sockmsgs(*_sockptr, _sock_msgs);
 }
 
 void Client::query_and_create()
@@ -81,7 +81,7 @@ std::string Client::parse_topic_msg(std::string msg)
 {
 	std::string new_msg = "";
 	std::deque<std::string> parts;
-	parts = split_(msg, ":");
+	parts = sockio::split(msg, ":");
 	for (auto it = parts.begin(); it != parts.end(); ++it) {
 		if (it == parts.begin())
 			continue;

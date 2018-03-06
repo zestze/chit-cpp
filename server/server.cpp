@@ -25,12 +25,12 @@ std::string Server::try_reading(tcp::socket& sock)
 	if (!_end_msgs.count(end))
 		_end_msgs[end]; // instantiate bc i'm nervous
 	std::deque<std::string>& sock_msgs = _end_msgs[end];
-	return try_reading_from_sock(sock, sock_msgs);
+	return sockio::try_reading_from_sock(sock, sock_msgs);
 }
 
 void Server::try_writing(tcp::socket& sock, std::string msg)
 {
-	try_writing_to_sock(sock, msg);
+	sockio::try_writing_to_sock(sock, msg);
 }
 
 User Server::register_session(tcp::socket& sock)
@@ -41,7 +41,7 @@ User Server::register_session(tcp::socket& sock)
 
 	msg = try_reading(sock);
 	// "USER <user-name> * * :<real-name>"
-	std::deque<std::string> parts = split_(msg, " * * :");
+	std::deque<std::string> parts = sockio::split(msg, " * * :");
 
 	std::string part1, part2;
 	part1 = parts.front();

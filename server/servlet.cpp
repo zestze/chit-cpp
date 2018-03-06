@@ -23,13 +23,13 @@ std::string Servlet::try_reading(User user)
 	if (_end_msgs.count(end))
 		_end_msgs[end];
 	std::deque<std::string>& sock_msgs = _end_msgs[end];
-	return try_reading_from_sock(sock, sock_msgs);
+	return sockio::try_reading_from_sock(sock, sock_msgs);
 }
 
 void Servlet::try_writing(User user, std::string msg)
 {
 	tcp::socket& sock = *get_sock_for_user(user);
-	try_writing_to_sock(sock, msg);
+	sockio::try_writing_to_sock(sock, msg);
 }
 
 void Servlet::update_endmsgs()
@@ -39,7 +39,7 @@ void Servlet::update_endmsgs()
 		if (!_end_msgs.count(end))
 			_end_msgs[end];
 		std::deque<std::string>& sock_msgs = _end_msgs[end];
-		update_sockmsgs(sock, sock_msgs);
+		sockio::update_sockmsgs(sock, sock_msgs);
 	}
 }
 
@@ -246,7 +246,7 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 		// and to the others, will be similar to a PRIVMSG
 
 		std::string split_here = "TOPIC " + _channel_name + " :";
-		std::deque<std::string> parts = split_(msg, split_here);
+		std::deque<std::string> parts = sockio::split(msg, split_here);
 		_channel_topic = *--parts.end();
 
 		// the user that modified the topic
