@@ -8,12 +8,9 @@
 
 std::deque<tcp::socket>::iterator Servlet::get_sock_for_user(User user)
 {
-	auto it = _socks.begin();
-	for (; it != _socks.end(); ++it) {
-		if (it->remote_endpoint() == user.get_endpt())
-			break;
-	}
-	return it;
+	return std::find_if(_socks.begin(), _socks.end(),
+			[&user](const auto& sock)
+			{ return user.get_endpt() == sock.remote_endpoint(); });
 }
 
 std::string Servlet::try_reading(User user)
@@ -76,14 +73,10 @@ std::deque<User> Servlet::grab_new()
 
 	// grab new sockets
 	for (auto sock_it = global_socks.begin(); sock_it != global_socks.end(); ) {
-		bool match = false;
-
-		for (auto& user : _users) {
-			if (user.get_endpt() == sock_it->remote_endpoint()) {
-				match = true;
-				break;
-			}
-		}
+		bool match = std::any_of(_users.begin(), _users.end(),
+				[sock_it](const auto& user)
+				{ return user.get_endpt() ==
+				sock_it->remote_endpoint(); });
 
 		if (match) {
 			_socks.push_back(std::move(*sock_it));
@@ -97,14 +90,8 @@ std::deque<User> Servlet::grab_new()
 
 bool Servlet::check_user_in(User& user, std::deque<User>& deq)
 {
-	bool found = false;
-	for (auto& u : deq) {
-		if (u.get_endpt() == user.get_endpt()) {
-			found = true;
-			break;
-		}
-	}
-	return found;
+	return std::any_of(deq.begin(), deq.end(), [&user] (const auto& u)
+			{ return user.get_endpt() == u.get_endpt(); });
 }
 
 void Servlet::handle_newusers()
@@ -159,22 +146,14 @@ bool Servlet::check_newusers(std::shared_ptr<std::atomic<bool>>& notify)
 
 bool Servlet::check_endmsgs()
 {
-	for (auto& em : _end_msgs) {
-		if (!em.second.empty())
-			return true;
-	}
-	return false;
+	return std::any_of(_end_msgs.begin(), _end_msgs.end(),
+			[] (const auto& em) { return !em.second.empty(); });
 }
 
 void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 {
-	User client;
-	for (auto& u : _users) {
-		if (u.get_endpt() == end) {
-			client = u;
-			break;
-		}
-	}
+	User client = *std::find_if(_users.begin(), _users.end(),
+			[&end] (const auto& u) { return u.get_endpt() == end; });
 
 	if (msg.substr(0, 7) == "PRIVMSG") {
 		// format read:
@@ -250,13 +229,9 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 		_channel_topic = *--parts.end();
 
 		// the user that modified the topic
-		User modified;
-		for (auto& u : _users) {
-			if (u.get_endpt() == end) {
-				modified = u;
-				break;
-			}
-		}
+		User modified = *std::find_if(_users.begin(), _users.end(),
+				[&end] (const auto& u) { return u.get_endpt()
+				== end; });
 
 		const tcp::socket& sock = _socks.front();
 		const std::string locIP = sock.local_endpoint().address().to_string();
