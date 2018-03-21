@@ -53,17 +53,12 @@ std::deque<User> Servlet::grab_new()
 	std::deque<User> newusers;
 
 	for (auto& tup : chan_newusers[chan]) {
-		// copy over user
-		User newu = std::get<0>(tup);
-		_users.push_back(newu);
+		// copy over user and msgs
+		auto& [newu, temp_msgs] = tup;
 
-		//std::cout << newu.print_() << std::endl;
-
-		// copy over messages
-		std::deque<std::string> temp_msgs(std::move(std::get<1>(tup)));
+		_users.push_back(std::move(newu));
 		_end_msgs[newu.get_endpt()]; // initialize
-
-		for (auto& msg : temp_msgs)
+		for (auto msg : temp_msgs)
 			_end_msgs[newu.get_endpt()].push_back(msg);
 
 		// for later handling of new users
