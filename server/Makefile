@@ -5,7 +5,7 @@ INCLUDES 	= -I../libs/
 CFLAGS 		= -g -Wall $(INCLUDES)
 CXXFLAGS 	= -g -Wall $(INCLUDES) -std=c++17 -pthread -O2
 LDFLAGS 	= -g -pthread -L../libs/
-LDLIBS 		= -lboost_system -lsockio
+LDLIBS 		= -lsockio
 
 $(TARGET): server.o servlet.o notifier.o
 

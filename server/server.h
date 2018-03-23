@@ -24,9 +24,11 @@
 #include <thread>
 #include <tuple>
 #include <atomic>
-#include <boost/asio.hpp>
+//#include <boost/asio.hpp>
+#include <asio.hpp>
 
-using boost::asio::ip::tcp;
+//using boost::asio::ip::tcp;
+using tcp = asio::ip::tcp;
 
 class Server {
 
@@ -58,7 +60,7 @@ class Server {
 
 		/*
 		 */
-		void inner_scope_run(boost::asio::io_service& io_service,
+		void inner_scope_run(asio::io_service& io_service,
 				tcp::acceptor& acceptor);
 
 		/*

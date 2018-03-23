@@ -15,9 +15,11 @@
 #include <deque>
 #include <array>
 #include <string>
-#include <boost/asio.hpp>
+//#include <boost/asio.hpp>
+#include <asio.hpp>
 
-using boost::asio::ip::tcp;
+//using boost::asio::ip::tcp;
+using tcp = asio::ip::tcp;
 
 namespace sockio {
 
@@ -27,7 +29,8 @@ std::deque<std::string> split(std::string full_msg, std::string delim);
 
 /*
  */
-std::string try_reading_from_sock(tcp::socket& sock, std::deque<std::string>& sock_msgs);
+std::string try_reading_from_sock(tcp::socket& sock,
+		std::deque<std::string>& sock_msgs);
 
 /*
  */

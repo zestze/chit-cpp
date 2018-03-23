@@ -11,7 +11,8 @@
 #include "../libs/sockio.h"
 
 #include <iostream>
-#include <boost/asio.hpp>
+//#include <boost/asio.hpp>
+#include <asio.hpp>
 #include <string>
 #include <deque>
 #include <memory>
@@ -23,7 +24,8 @@
 #include <limits.h>
 // for grabbing username
 
-using boost::asio::ip::tcp;
+//using boost::asio::ip::tcp;
+using tcp = asio::ip::tcp;
 
 std::string const RESERVED_CHARS[3] = {":", "!", "@"};
 
@@ -69,7 +71,7 @@ class Client {
 
 		bool parse_user_input(std::string msg);
 
-		void set_sock(boost::asio::io_service& ios);
+		void set_sock(asio::io_service& ios);
 
 		void run(std::string serv_ip, std::string port);
 

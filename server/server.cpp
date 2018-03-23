@@ -81,13 +81,13 @@ void Server::update_comm_structs(User& u, std::deque<std::string>& msgs,
 	// don't use sock after this
 }
 
-void Server::inner_scope_run(boost::asio::io_service& io_service,
+void Server::inner_scope_run(asio::io_service& io_service,
 		tcp::acceptor& acceptor)
 {
 	tcp::socket sock(io_service);
-	boost::system::error_code ec;
+	asio::error_code ec;
 	acceptor.accept(sock, ec);
-	if (ec == boost::asio::error::would_block)
+	if (ec == asio::error::would_block)
 		return;
 
 	User client (register_session(sock));
@@ -127,7 +127,7 @@ void Server::run(int listen_port)
 		set_globals();
 		std::signal(SIGINT, signal_handler);
 
-		boost::asio::io_service io_service;
+		asio::io_service io_service;
 		tcp::acceptor acceptor(io_service,
 				tcp::endpoint(tcp::v4(), listen_port));
 		acceptor.non_blocking(true);

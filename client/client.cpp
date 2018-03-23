@@ -283,7 +283,7 @@ bool Client::parse_user_input(std::string msg)
 	}
 }
 
-void Client::set_sock(boost::asio::io_service& ios)
+void Client::set_sock(asio::io_service& ios)
 {
 	_sockptr = std::make_unique<tcp::socket>(ios);
 }
@@ -301,9 +301,9 @@ void Client::run(std::string serv_ip, std::string port)
 
 		query_and_create();
 
-		boost::asio::io_service io_service;
+		asio::io_service io_service;
 		tcp::endpoint endpoint(
-				boost::asio::ip::address_v4::from_string(serv_ip),
+				asio::ip::address_v4::from_string(serv_ip),
 				serv_port);
 		//tcp::socket serv_sock(io_service);
 		set_sock(io_service);

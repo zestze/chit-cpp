@@ -6,7 +6,7 @@ INCLUDES 	=
 CFLAGS 		= -g -Wall $(INCLUDES)
 CXXFLAGS 	= -g -Wall $(INCLUDES) -std=c++17
 LDFLAGS 	= -g
-LDLIBS 		= -lboost_system
+LDLIBS 		=
 
 $(LIBTARG): $(TARGET).o
 	ar rc $(LIBTARG).a $(TARGET).o

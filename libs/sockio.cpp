@@ -9,8 +9,6 @@
 //const int BUFF_SIZE = 1024;
 #define BUFF_SIZE 1024
 
-//using boost::asio::ip::tcp;
-
 std::deque<std::string> sockio::split(std::string full_msg, std::string delim)
 {
 	std::deque<std::string> msgs;
@@ -41,14 +39,15 @@ void sockio::try_writing_to_sock(tcp::socket& sock, std::string msg)
 {
 	if (msg.substr(msg.length() - 2, std::string::npos) != "\r\n")
 		throw std::invalid_argument("All IRC msgs need \\r\\n suffix");
-	boost::system::error_code ec;
-	boost::asio::write(sock, boost::asio::buffer(msg),
-			boost::asio::transfer_all(), ec);
+	asio::error_code ec;
+	asio::write(sock, asio::buffer(msg),
+			asio::transfer_all(), ec);
 	//if (DEBUG)
 		//std::cout << "WRITE: " << msg << std::endl;
 }
 
-std::string sockio::try_reading_from_sock(tcp::socket& sock, std::deque<std::string>& sock_msgs)
+std::string sockio::try_reading_from_sock(tcp::socket& sock,
+		std::deque<std::string>& sock_msgs)
 {
 	if (!sock_msgs.empty()) {
 		std::string msg = sock_msgs.front();
@@ -57,8 +56,8 @@ std::string sockio::try_reading_from_sock(tcp::socket& sock, std::deque<std::str
 	}
 
 	std::array<char, BUFF_SIZE> buff = { };
-	boost::system::error_code ec;
-	sock.read_some(boost::asio::buffer(buff), ec);
+	asio::error_code ec;
+	sock.read_some(asio::buffer(buff), ec);
 	std::string full_msg(buff.data());
 	std::deque<std::string> msgs;
 
@@ -77,7 +76,8 @@ std::string sockio::try_reading_from_sock(tcp::socket& sock, std::deque<std::str
 	return msg;
 }
 
-void sockio::update_sockmsgs(tcp::socket& sock, std::deque<std::string>& sock_msgs)
+void sockio::update_sockmsgs(tcp::socket& sock,
+		std::deque<std::string>& sock_msgs)
 {
 	std::size_t len = sock.available();
 	if (len <= 0) { // could just put == 0 ...
@@ -85,8 +85,8 @@ void sockio::update_sockmsgs(tcp::socket& sock, std::deque<std::string>& sock_ms
 	}
 
 	std::array<char, BUFF_SIZE> buff = { };
-	boost::system::error_code ec;
-	sock.read_some(boost::asio::buffer(buff), ec);
+	asio::error_code ec;
+	sock.read_some(asio::buffer(buff), ec);
 	std::string full_msg(buff.data());
 	std::deque<std::string> msgs;
 

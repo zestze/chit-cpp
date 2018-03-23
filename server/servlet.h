@@ -37,7 +37,8 @@
 #include <mutex>
 #include <memory>
 
-using boost::asio::ip::tcp;
+//using boost::asio::ip::tcp;
+using tcp = asio::ip::tcp;
 
 using Chan_newusers_ptr = std::map<std::string, std::deque<std::tuple<User,
       std::deque<std::string>>>> *;
@@ -50,7 +51,7 @@ class Servlet {
 		 * This looks gross.
 		 */
 		Servlet(std::string c, Chan_newusers_ptr cnu_ptr,
-			std::deque<tcp::socket> *gs_ptr, std::mutex *gl_ptr)
+			std::deque<asio::ip::tcp::socket> *gs_ptr, std::mutex *gl_ptr)
 			:_chan_newusers_ptr{cnu_ptr}, _global_socks_ptr{gs_ptr},
 			_gl_lock_ptr{gl_ptr}, _channel_name{c}
 		{

@@ -5,7 +5,7 @@ INCLUDES 	= -I../libs/
 CFLAGS 		= -g -Wall $(INCLUDES)
 CXXFLAGS 	= -g -Wall $(INCLUDES) -std=c++17 -O2
 LDFLAGS 	= -g -L../libs/
-LDLIBS 		= -lboost_system -lsockio
+LDLIBS 		= -lsockio
 
 $(TARGET): client.o
 

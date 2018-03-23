@@ -197,7 +197,7 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 
 		// get rid of socket
 		for (auto it = _socks.begin(); it != _socks.end(); ++it) {
-			boost::system::error_code ec;
+			asio::error_code ec;
 			tcp::endpoint this_end = it->remote_endpoint(ec);
 			if (ec) {
 				// error thrown, so socket was closed and this is one
