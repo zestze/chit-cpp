@@ -89,6 +89,8 @@ void Server::inner_scope_run(asio::io_service& io_service,
 	acceptor.accept(sock, ec);
 	if (ec == asio::error::would_block)
 		return;
+	asio::socket_base::keep_alive option(true);
+	sock.set_option(option);
 
 	User client (register_session(sock));
 	std::string channel (get_channel_name(sock));
