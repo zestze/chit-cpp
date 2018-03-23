@@ -12,7 +12,8 @@ RUN apt update && apt install -y \
 	build-essential \
 	clang++-5.0 \
 	make \
-	libboost-all-dev \
+	libasio-dev \
+	#libboost-all-dev \
 	vim-gtk
 
 # Start from a Bash prompt
