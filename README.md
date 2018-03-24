@@ -24,8 +24,8 @@ will be replaced in time.
 
 - g++ compiler capable of running atleast C++11
 - make for Makefiles
-- c++ boost libraries, as of now assumes it's installed in $PATH
-	- in future, will port over relevant boost libraries into `libs/` or implement own library
+- c++ asio stand-alone library
+	- on ubuntu this is `libasio-dev`
 
 ## Usage
 
@@ -42,34 +42,35 @@ them for relevant information, like nicknames, realnames, etc. and describes the
 commands. To quit the client-side please follow the instructions and type `EXIT`. To quit
 the server side, similarly follow the output and type `CTRL+C`
 
+Here are instructions for doing a local session
+```bash
+# server side, starting at project-root
+cd test/
+./server-test.sh
+```
+
+```bash
+# client side, starting at project-root
+cd test/
+./client-local-test.sh
+```
+
+If the hardcoded digital oceans server is running, then a client can sign on like so
+```bash
+cd test/
+./client-digocean-test.sh
+```
+
 ## Features to Implement
 
-- [x] Put server methods into a class, and organize a bit.
-- [ ] Move 'using' declarations into class namespaces
 - [ ] move consts_globs etc header extern definitions into it's own definition. Globals like that
 	are a bad idea
 - [ ] move atomic killself to private variable of server
-- [x] Make a notifier class that wraps a map, with [@key: channel_name, @value: pointer to
-	atomic<bool>]. For each channel, use 'new' to make an atomic bool on the heap, and
-	store a pointer to it. When starting the channel servlet, pass the [@value: pointer]
-	and use the pointer to communicate if a user was added or not.
-- [x] Get rid of globals - make a map of [cahannel_name, deque_of_stuff_
-	to_pass] and make it global to main() function.
-	Pass a ptr to each thread as their created, and a copy of the
-	mutex protecting the map. Or a pointer of the mutex?
-	Can have an atomic<bool> for each [key, value] pair to pass as well.
-	Check val after grabbing lock, if not changed, return immediately,
-	else, parse map and grab relevant [key, val] pair?
-	Kind of unecessary, just check if val is empty.
-- [x] Put extern globals in their own namespace or something.
-- [x] For errors print to std::cerr and for other info print to std::cout
-- [x] Can use structured bindings, "auto [el1, el2... ] = get_tuple(...)" when grabbing tuples
-- [x] Change unique_lock to scoped_lock (C++17) or lock_guard
-- [x] Call "ios_base::sync_with_stdio(falste);" in functions using I/O to reduce overhead
 - [ ] Check server.h and sockio.cpp for curr changes to implement
 - [ ] "Modes" for users that limit actions
 - [ ] Maintain state: user profiles, chat history log, etc.
 - [ ] Implement time-out mechanism on read, to account for broken connections
 - [ ] Handle broken pipe exceptions, and implement a prioritize PART messages
-- [x] Use RW Locks for quicker access to global variables, maybe user atomic checkVars
 - [ ] On client side, use different colors for different users?
+- [ ] Switch from using current posix signal handler, to generic asio signal_set
+	- this involves doing `io_service.run()` after signal handler is binded
