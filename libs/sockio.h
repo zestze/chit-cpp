@@ -34,7 +34,7 @@ std::string try_reading_from_sock(tcp::socket& sock,
 
 /*
  */
-void try_writing_to_sock(tcp::socket& sock, std::string msg);
+asio::error_code try_writing_to_sock(tcp::socket& sock, std::string msg);
 
 /*
  */

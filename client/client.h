@@ -16,6 +16,7 @@
 #include <string>
 #include <deque>
 #include <memory>
+#include <regex>
 
 // for grabbing username
 #include <unistd.h>

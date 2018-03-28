@@ -35,13 +35,14 @@ std::deque<std::string> sockio::split(std::string full_msg, std::string delim)
 	return msgs;
 }
 
-void sockio::try_writing_to_sock(tcp::socket& sock, std::string msg)
+asio::error_code sockio::try_writing_to_sock(tcp::socket& sock, std::string msg)
 {
 	if (msg.substr(msg.length() - 2, std::string::npos) != "\r\n")
 		throw std::invalid_argument("All IRC msgs need \\r\\n suffix");
 	asio::error_code ec;
 	asio::write(sock, asio::buffer(msg),
 			asio::transfer_all(), ec);
+	return ec;
 	//if (DEBUG)
 		//std::cout << "WRITE: " << msg << std::endl;
 }

@@ -6,6 +6,10 @@
  * @TODO: fix parse_session_msg, works fine, but handling is inconsistent.
  * @TODO: change to regex handling for finer handling
  * @TODO: move each parse_session_msg option into its own function
+ * @TODO: put 'LEAVE' feature that lets a user drop out of current channel
+ * and enter a new one
+ * @TODO: continue with regex work - initial parsing works, but continued
+ * use needs to be verified / changed
  */
 
 #include "client.h"
@@ -162,12 +166,16 @@ std::string Client::connect_to_channel()
 
 void Client::parse_session_msg(std::string msg)
 {
-	//@TODO: change to regular expression matching to be robust
 	//@TODO: :<nick> vs <nick> for begin of msg... inconsistent, so fix
 	// bc msg.substr(... found - 1) vs msg.substr(... found)
 
 	std::string to_print;
-	if (msg.find("PRIVMSG") != std::string::npos) {
+	std::regex priv_msg {R"(^\:\w+!\w+@\d+\.\d+\.\d+\.\d+ PRIVMSG)"};
+	std::regex part_msg {R"(^\:\w+!\w+@\d+\.\d+\.\d+\.\d+ PART)"};
+	std::regex join_msg {R"(^\w+!\w+@\d+\.\d+\.\d+\.\d+ JOIN)"};
+	std::regex topic_msg {R"(^\w+!\w+@\d+\.\d+\.\d+\.\d+ TOPIC)"};
+
+	if (std::regex_search(msg, priv_msg)) {
 		// :<nick>!<user>@<user-ip> PRIVMSG <channel> :<msg>
 		std::size_t found = msg.find("!");
 		std::string nick = msg.substr(1, found - 1); // should work...
@@ -175,7 +183,8 @@ void Client::parse_session_msg(std::string msg)
 		std::string priv_msg = msg.substr(found + 1, std::string::npos); // should work..
 		to_print = nick + ": " + priv_msg + "\n";
 		std::cout << to_magenta(to_print);
-	} else if (msg.find("PART") != std::string::npos) {
+
+	} else if (std::regex_search(msg, part_msg)) {
 		// :<nick>!<user>@<user-ip> PART <channel> [:<parting-msg>]
 		// ignoring [:<parting-msg>] for now
 		std::size_t found = msg.find("!");
@@ -184,7 +193,8 @@ void Client::parse_session_msg(std::string msg)
 		std::string channel = msg.substr(found + 5, std::string::npos);
 		to_print = nick + " LEFT CHANNEL " + channel + "\n";
 		std::cout << to_magenta(to_print);
-	} else if (msg.find("JOIN") != std::string::npos) {
+
+	} else if (std::regex_search(msg, join_msg)) {
 		// <nick>!<user>@<user-ip> JOIN <channel>
 		std::size_t found = msg.find("!");
 		std::string nick = msg.substr(0, found);
@@ -193,7 +203,7 @@ void Client::parse_session_msg(std::string msg)
 		to_print = nick + " JOINED CHANNEL " + channel + "\n";
 		std::cout << to_magenta(to_print);
 
-	} else if (msg.find("TOPIC") != std::string::npos) {
+	} else if (std::regex_search(msg, topic_msg)) {
 		// <nick>!<user>@<user-ip> TOPIC <channel> :<new-topic>
 
 		std::size_t found = msg.find("!");
@@ -206,6 +216,7 @@ void Client::parse_session_msg(std::string msg)
 
 		to_print = nick + " CHANGED TOPIC TO: " + _channel_topic + "\n";
 		std::cout << to_magenta(to_print);
+
 	} else {
 		std::string reply = "ERROR, unrecognized message or buffer overflow\n"
 			          + msg + "\n";

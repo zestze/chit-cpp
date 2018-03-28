@@ -13,6 +13,35 @@ std::deque<tcp::socket>::iterator Servlet::get_sock_for_user(User user)
 			{ return user.get_endpt() == sock.remote_endpoint(); });
 }
 
+void Servlet::remove_trace_of(User user)
+{
+	// remove user from users deque
+	tcp::endpoint end = user.get_endpt();
+	_users.erase(std::find_if(_users.begin(), _users.end(),
+		[&end] (const auto& u) { return u.get_endpt() == end; }));
+
+	// get rid of deque associated with socket
+	_end_msgs.erase(end);
+
+	// get rid of socket
+	//_socks.erase(get_sock_for_user(user));
+	for (auto it = _socks.begin(); it != _socks.end(); ++it) {
+		asio::error_code ec;
+		tcp::endpoint this_end = it->remote_endpoint(ec);
+		if (ec) {
+			// error thrown, so socket was closed and this is one
+			// to get rid of.
+			_socks.erase(it);
+			break;
+		} if (this_end == end) {
+			_socks.erase(it); // calling erase like this should
+			// implicitly close socket
+			break;
+		}
+	}
+
+}
+
 std::string Servlet::try_reading(User user)
 {
 	tcp::endpoint end = user.get_endpt();
@@ -26,7 +55,11 @@ std::string Servlet::try_reading(User user)
 void Servlet::try_writing(User user, std::string msg)
 {
 	tcp::socket& sock = *get_sock_for_user(user);
-	sockio::try_writing_to_sock(sock, msg);
+	asio::error_code ec = sockio::try_writing_to_sock(sock, msg);
+	if (ec) {
+		// assume broken sock or something... remove user
+		remove_trace_of(user);
+	}
 }
 
 void Servlet::update_endmsgs()
@@ -69,7 +102,7 @@ std::deque<User> Servlet::grab_new()
 	// grab new sockets
 	for (auto sock_it = global_socks.begin(); sock_it != global_socks.end(); ) {
 		bool match = std::any_of(_users.begin(), _users.end(),
-				[sock_it](const auto& user)
+				[sock_it] (const auto& user)
 				{ return user.get_endpt() ==
 				sock_it->remote_endpoint(); });
 
@@ -145,106 +178,90 @@ bool Servlet::check_endmsgs()
 			[] (const auto& em) { return !em.second.empty(); });
 }
 
+void Servlet::handle_priv(std::string msg, User client)
+{
+	// format read:
+	// PRIVMSG <channel> :<msg>
+	// format to write:
+	// :<nick>!<user>@<user-ip> PRIVMSG <channel> :<msg>
+
+	const tcp::endpoint end = client.get_endpt();
+	std::string clntIP = end.address().to_string();
+	std::string reply;
+	reply = ":" + client.get_nick() + "!" + client.get_user() + "@"
+	      + clntIP + " " + msg + "\r\n";
+	for (auto& u : _users) {
+		if (u.get_endpt() == end)
+			continue;
+		// broadcast PRIVMSG to members besides one who sent it
+		try_writing(u, reply);
+	}
+}
+
+void Servlet::handle_part(std::string msg, User client)
+{
+	// format read:
+	// PART <channel>
+	// format to write:
+	// :<nick>!<user>@<user-ip> PART <channel>
+
+	const tcp::endpoint end = client.get_endpt();
+	std::string clntIP = end.address().to_string();
+	std::string reply;
+	reply = ":" + client.get_nick() + "!" + client.get_user() + "@"
+	      + clntIP + " " + msg + "\r\n";
+	for (auto& u : _users) {
+		if (u.get_endpt() == end)
+			continue;
+		try_writing(u, reply);
+	}
+
+	remove_trace_of(client);
+}
+
+void Servlet::handle_topic(std::string msg, User client)
+{
+	// format read:
+	// TOPIC <channel> :<new-topic>
+	// format to write:
+	// nick!<user>@<user-ip> TOPIC <channel> :<new-topic>
+	// Going to send a RPL_TOPIC to person sending the update,
+	// and to the others, will be similar to a PRIVMSG
+
+	std::string split_here = "TOPIC " + _channel_name + " :";
+	std::deque<std::string> parts = sockio::split(msg, split_here);
+	_channel_topic = *--parts.end();
+
+	const tcp::socket& sock = _socks.front();
+	const std::string locIP = sock.local_endpoint().address().to_string();
+
+	std::string reply;
+	reply = client.get_nick() + "!" + client.get_user() + "@"
+	      + client.get_endpt().address().to_string()
+	      + " TOPIC " + _channel_name + " :"
+	      + _channel_topic + "\r\n";
+
+	for (auto& u : _users)
+		try_writing(u, reply);
+}
+
 void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 {
 	User client = *std::find_if(_users.begin(), _users.end(),
 			[&end] (const auto& u) { return u.get_endpt() == end; });
 
 	if (msg.substr(0, 7) == "PRIVMSG") {
-		// format read:
-		// PRIVMSG <channel> :<msg>
-		// format to write:
-		// :<nick>!<user>@<user-ip> PRIVMSG <channel> :<msg>
-
-		std::string clntIP = end.address().to_string();
-		std::string reply;
-		reply = ":" + client.get_nick() + "!" + client.get_user() + "@"
-		      + clntIP + " " + msg + "\r\n";
-		for (auto& u : _users) {
-			if (u.get_endpt() == end)
-				continue;
-			// broadcast PRIVMSG to members besides one who sent it
-			try_writing(u, reply);
-		}
+		handle_priv(msg, client);
 
 	} else if (msg.substr(0, 4) == "PART") {
-		// format read:
-		// PART <channel>
-		// format to write:
-		// :<nick>!<user>@<user-ip> PART <channel>
-
-		std::string clntIP = end.address().to_string();
-		std::string reply;
-		reply = ":" + client.get_nick() + "!" + client.get_user() + "@"
-		      + clntIP + " " + msg + "\r\n";
-		for (auto& u : _users) {
-			if (u.get_endpt() == end)
-				continue;
-			try_writing(u, reply);
-		}
-
-		// remove user from users deque
-		// del entry for end_msgs and end_socks
-		for (auto it = _users.begin(); it != _users.end(); ++it) {
-			if (it->get_endpt() == end) {
-				_users.erase(it);
-				break;
-			}
-		}
-
-		// get rid of deque associated with socket
-		_end_msgs.erase(end);
-
-		// get rid of socket
-		for (auto it = _socks.begin(); it != _socks.end(); ++it) {
-			asio::error_code ec;
-			tcp::endpoint this_end = it->remote_endpoint(ec);
-			if (ec) {
-				// error thrown, so socket was closed and this is one
-				// to get rid of.
-				_socks.erase(it);
-				break;
-			} if (this_end == end) {
-				_socks.erase(it); // calling erase like this should
-				// implicitly close socket
-				break;
-			}
-		}
+		handle_part(msg, client);
 
 	} else if (msg.substr(0, 5) == "TOPIC") {
-		// format read:
-		// TOPIC <channel> :<new-topic>
-		// format to write:
-		// nick!<user>@<user-ip> TOPIC <channel> :<new-topic>
-		// Going to send a RPL_TOPIC to person sending the update,
-		// and to the others, will be similar to a PRIVMSG
-
-		std::string split_here = "TOPIC " + _channel_name + " :";
-		std::deque<std::string> parts = sockio::split(msg, split_here);
-		_channel_topic = *--parts.end();
-
-		// the user that modified the topic
-		User modified = *std::find_if(_users.begin(), _users.end(),
-				[&end] (const auto& u) { return u.get_endpt()
-				== end; });
-
-		const tcp::socket& sock = _socks.front();
-		const std::string locIP = sock.local_endpoint().address().to_string();
-
-		std::string reply;
-		reply = modified.get_nick() + "!" + modified.get_user() + "@"
-		      + modified.get_endpt().address().to_string()
-		      + " TOPIC " + _channel_name + " :"
-		      + _channel_topic + "\r\n";
-
-		for (auto& u : _users)
-			try_writing(u, reply);
+		handle_topic(msg, client);
 
 	} else {
-		std::cerr << "Unrecognized Message:\n";
-		std::cerr << "Msg begin: ";
-		std::cerr << msg << "\n";
-		std::cerr << "Msg end";
+		std::cerr << "Unrecognized Message:\n"
+			  << "Msg begin: " << msg << "\n" << "Msg end";
 		throw std::invalid_argument("Unrecognized message format");
 	}
 }

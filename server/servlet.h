@@ -75,6 +75,10 @@ class Servlet {
 		std::deque<tcp::socket>::iterator get_sock_for_user(User user);
 
 		/*
+		 */
+		void remove_trace_of(User user);
+
+		/*
 		 * Grab the newusers waiting to join channel and the messages
 		 * that they've passed along thus far. After grabbing them from
 		 * the global deque, grab the sockets associated with them
@@ -140,6 +144,18 @@ class Servlet {
 		 * notify rest of channel that the user has left.
 		 */
 		void handle_msg(std::string msg, tcp::endpoint end);
+
+		/*
+		 */
+		void handle_priv(std::string msg, User client);
+
+		/*
+		 */
+		void handle_part(std::string msg, User client);
+
+		/*
+		 */
+		void handle_topic(std::string msg, User client);
 
 		/*
 		 * Go through every message of _end_msgs for every user,
