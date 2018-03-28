@@ -48,6 +48,8 @@ std::string inline to_magenta(std::string msg) {
 	return "\033[1;35m" + msg + "\033[0m";
 }
 
+enum client_code { quitting, not_quitting, switching };
+
 class Client {
 	public:
 		std::string try_reading();
@@ -70,7 +72,7 @@ class Client {
 
 		void handle_topic_request();
 
-		bool parse_user_input(std::string msg);
+		client_code parse_user_input(std::string msg);
 
 		void set_sock(asio::io_service& ios);
 

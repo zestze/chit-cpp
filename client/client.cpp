@@ -14,7 +14,6 @@
 
 #include "client.h"
 
-
 bool DEBUG = false;
 //bool DEBUG = true;
 
@@ -262,16 +261,15 @@ void Client::handle_topic_request()
 	}
 }
 
-// return true if need to quit
-bool Client::parse_user_input(std::string msg)
+client_code Client::parse_user_input(std::string msg)
 {
 	if (msg == "") {
-		return false;
+		return not_quitting;
 	} else if (msg == "EXIT") {
 		std::string part_msg = "PART " + _user.get_chan() + "\r\n";
 		// ignoring :<part-msg>
 		try_writing(part_msg);
-		return true;
+		return quitting;
 	} else if (msg == "HELP") {
 		std::string to_client;
 		to_client = std::string("\n")
@@ -279,18 +277,24 @@ bool Client::parse_user_input(std::string msg)
 			  + "options...\n"
 			  + "TOPIC: SET or SHOW the current chat topic\n"
 		          + "EXIT: exit the client\n"
+			  + "LEAVE: exit channel, and connect to new one\n"
 		          + "HELP: print this dialog\n\n";
 		std::cout << to_blue(to_client);
-		return false;
+		return not_quitting;
 	} else if (msg == "TOPIC") {
 		handle_topic_request();
-		return false;
+		return not_quitting;
+	} else if (msg == "LEAVE") {
+		std::string part_msg = "PART " + _user.get_chan() + "\r\n";
+		// ignoring :<part-msg>
+		try_writing(part_msg);
+		return switching;
 	} else {
 		std::string priv_msg;
 		priv_msg = "PRIVMSG " + _user.get_chan()
 		         + " :" + msg + "\r\n";
 		try_writing(priv_msg);
-		return false;
+		return not_quitting;
 	}
 }
 
@@ -316,17 +320,14 @@ void Client::run(std::string serv_ip, std::string port)
 		tcp::endpoint endpoint(
 				asio::ip::address_v4::from_string(serv_ip),
 				serv_port);
-		//tcp::socket serv_sock(io_service);
 		set_sock(io_service);
 
-		//serv_sock.connect(endpoint);
 		_sockptr->connect(endpoint);
 
 		pass_user_info_to_server();
 
-		std::string channel = connect_to_channel();
-		_user.set_channel(channel);
-		_channel_name = channel;
+		_channel_name = connect_to_channel();
+		_user.set_channel(_channel_name);
 
 		std::string msg;
 		msg = std::string("\n")
@@ -339,8 +340,8 @@ void Client::run(std::string serv_ip, std::string port)
 		    + "Have fun :)\n\n";
 		std::cout << to_blue(msg);
 
-		bool quit = false;
-		while (!quit) {
+		client_code cc = not_quitting;
+		while (cc != quitting) {
 			update();
 
 			for (auto& msg : _sock_msgs)
@@ -350,7 +351,14 @@ void Client::run(std::string serv_ip, std::string port)
 			std::cout << to_cyan(_user.get_nick() + ": ");
 			getline(std::cin, msg);
 
-			quit = parse_user_input(msg);
+			cc = parse_user_input(msg);
+			if (cc == switching) {
+				_sockptr->close();
+				_sockptr->connect(endpoint);
+				pass_user_info_to_server();
+				_channel_name = connect_to_channel();
+				_user.set_channel(_channel_name);
+			}
 		}
 
 	}

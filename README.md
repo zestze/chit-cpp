@@ -74,3 +74,4 @@ cd test/
 - [ ] On client side, use different colors for different users?
 - [ ] Switch from using current posix signal handler, to generic asio signal_set
 	- this involves doing `io_service.run()` after signal handler is binded
+- [ ] Server is still getting `bad_alloc` ocasionally - find out why.
