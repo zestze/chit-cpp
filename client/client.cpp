@@ -4,10 +4,6 @@
  * Zeke Reyna
  *
  * @TODO: fix parse_session_msg, works fine, but handling is inconsistent.
- * @TODO: change to regex handling for finer handling
- * @TODO: move each parse_session_msg option into its own function
- * @TODO: put 'LEAVE' feature that lets a user drop out of current channel
- * and enter a new one
  * @TODO: continue with regex work - initial parsing works, but continued
  * use needs to be verified / changed
  */
