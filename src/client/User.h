@@ -23,7 +23,7 @@ class User
 		}
 
 		// constructor with params
-		User(const std::string n, const std::string u, const std::string r)
+		User(const std::string& n, const std::string& u, const std::string& r)
 			:nick{n}, user_name{u}, real_name{r}
 		{
 			password = "";
@@ -42,9 +42,7 @@ class User
 
 
 		// destructor
-		~User()
-		{
-		}
+		~User() = default;
 
 
 		// member functions

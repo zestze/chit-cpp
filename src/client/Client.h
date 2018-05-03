@@ -7,8 +7,8 @@
 #ifndef __CLIENT_H__
 #define __CLIENT_H__
 
-#include "user.h"
-#include "../libs/sockio.h"
+#include "User.h"
+#include "Sockio.h"
 
 #include <iostream>
 //#include <boost/asio.hpp>
@@ -21,8 +21,8 @@
 // for grabbing username
 #include <unistd.h>
 #include <pwd.h>
-#include <stdio.h>
-#include <limits.h>
+#include <cstdio>
+#include <climits>
 // for grabbing username
 
 //using boost::asio::ip::tcp;
@@ -32,19 +32,19 @@ std::string const RESERVED_CHARS[3] = {":", "!", "@"};
 
 /*
  */
-std::string inline to_blue(std::string msg) {
+std::string inline to_blue(const std::string msg) {
 	return "\033[1;34m" + msg + "\033[0m";
 }
 
 /*
  */
-std::string inline to_cyan(std::string msg) {
+std::string inline to_cyan(const std::string msg) {
 	return "\033[1;36m" + msg + "\033[0m";
 }
 
 /*
  */
-std::string inline to_magenta(std::string msg) {
+std::string inline to_magenta(const std::string msg) {
 	return "\033[1;35m" + msg + "\033[0m";
 }
 

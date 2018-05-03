@@ -4,7 +4,7 @@
  * Zeke Reyna
  */
 
-#include "notifier.h"
+#include "Notifier.h"
 
 void Notifier::update(std::string channel)
 {

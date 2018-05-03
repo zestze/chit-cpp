@@ -36,7 +36,7 @@ class User
 		}
 
 		// constructor with params
-		User(const std::string n, const std::string u, const std::string r)
+		User(const std::string& n, const std::string& u, const std::string& r)
 			:_nick{n}, _user_name{u}, _real_name{r}
 		{
 			_password = "";
@@ -62,7 +62,7 @@ class User
 		void set_nick(std::string new_nick)    { _nick = new_nick; }
 		void set_pass(std::string new_pass)    { _password = new_pass; }
 		void set_channel(std::string new_chan) { _channel = new_chan; }
-		void set_endpoint(tcp::endpoint new_e)
+		void set_endpoint(const tcp::endpoint new_e)
 		{
 			_endpt = new_e;
 		}
@@ -76,7 +76,7 @@ class User
 
 		std::string print_() const
 		{
-			std::string msg("");
+			std::string msg;
 			msg += "nick: " + _nick + "\n";
 			msg += "user: " + _user_name + "\n";
 			msg += "real: " + _real_name + "\n";

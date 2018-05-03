@@ -4,7 +4,7 @@
  * Zeke Reyna
  */
 
-#include "servlet.h"
+#include "Servlet.h"
 
 std::deque<tcp::socket>::iterator Servlet::get_sock_for_user(User user)
 {
@@ -135,7 +135,7 @@ void Servlet::handle_newusers()
 		msg = newuser.get_nick() + "!" + newuser.get_user() + "@" + remIP
 		    + " JOIN " + newuser.get_chan() + "\r\n";
 
-		std::string usernames = "";
+		std::string usernames;
 		for (auto& user : _users) {
 			if (check_user_in(user, newusers) && !check_user_in(user, handled))
 				continue;

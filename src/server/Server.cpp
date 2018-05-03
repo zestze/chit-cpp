@@ -7,7 +7,7 @@
  * or make actually async
  */
 
-#include "server.h"
+#include "Server.h"
 
 // ************ GLOBALS ****************
 std::atomic<bool> killself;

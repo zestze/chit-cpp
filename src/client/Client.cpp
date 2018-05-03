@@ -8,7 +8,7 @@
  * use needs to be verified / changed
  */
 
-#include "client.h"
+#include "Client.h"
 
 bool DEBUG = false;
 //bool DEBUG = true;
@@ -78,7 +78,7 @@ void Client::pass_user_info_to_server()
 
 std::string Client::parse_topic_msg(std::string msg)
 {
-	std::string new_msg = "";
+	std::string new_msg ("");
 	std::deque<std::string> parts;
 	parts = sockio::split(msg, ":");
 	for (auto it = parts.begin(); it != parts.end(); ++it) {
@@ -172,17 +172,17 @@ void Client::parse_session_msg(std::string msg)
 
 	if (std::regex_search(msg, priv_msg)) {
 		// :<nick>!<user>@<user-ip> PRIVMSG <channel> :<msg>
-		std::size_t found = msg.find("!");
+		std::size_t found = msg.find('!');
 		std::string nick = msg.substr(1, found - 1); // should work...
-		found = msg.find(":", 1);
-		std::string priv_msg = msg.substr(found + 1, std::string::npos); // should work..
-		to_print = nick + ": " + priv_msg + "\n";
+		found = msg.find(':', 1);
+		std::string priv_msg_content = msg.substr(found + 1, std::string::npos); // should work..
+		to_print = nick + ": " + priv_msg_content + "\n";
 		std::cout << to_magenta(to_print);
 
 	} else if (std::regex_search(msg, part_msg)) {
 		// :<nick>!<user>@<user-ip> PART <channel> [:<parting-msg>]
 		// ignoring [:<parting-msg>] for now
-		std::size_t found = msg.find("!");
+		std::size_t found = msg.find('!');
 		std::string nick = msg.substr(1, found - 1); // should work..
 		found = msg.find("PART");
 		std::string channel = msg.substr(found + 5, std::string::npos);
@@ -191,7 +191,7 @@ void Client::parse_session_msg(std::string msg)
 
 	} else if (std::regex_search(msg, join_msg)) {
 		// <nick>!<user>@<user-ip> JOIN <channel>
-		std::size_t found = msg.find("!");
+		std::size_t found = msg.find('!');
 		std::string nick = msg.substr(0, found);
 		found = msg.find("JOIN");
 		std::string channel = msg.substr(found + 5, std::string::npos);
@@ -201,7 +201,7 @@ void Client::parse_session_msg(std::string msg)
 	} else if (std::regex_search(msg, topic_msg)) {
 		// <nick>!<user>@<user-ip> TOPIC <channel> :<new-topic>
 
-		std::size_t found = msg.find("!");
+		std::size_t found = msg.find('!');
 		std::string nick = msg.substr(0, found);
 		std::string delim = " TOPIC " + _channel_name + " :";
 		found = msg.find(delim);
@@ -259,7 +259,7 @@ void Client::handle_topic_request()
 
 client_code Client::parse_user_input(std::string msg)
 {
-	if (msg == "") {
+	if (msg.empty()) {
 		return not_quitting;
 	} else if (msg == "EXIT") {
 		std::string part_msg = "PART " + _user.get_chan() + "\r\n";
@@ -304,7 +304,7 @@ void Client::run(std::string serv_ip, std::string port)
 	try {
 		std::ios_base::sync_with_stdio(false);
 		std::cout << "Starting client...\n";
-		int serv_port = std::stoi(port);
+		unsigned short serv_port = std::stoul(port);
 
 		// might need to add support for strings other than localhost
 		if (serv_ip == "localhost")
@@ -325,8 +325,8 @@ void Client::run(std::string serv_ip, std::string port)
 		_channel_name = connect_to_channel();
 		_user.set_channel(_channel_name);
 
-		std::string msg;
-		msg = std::string("\n")
+		std::string userIO;
+		userIO = std::string("\n")
 		    + "##########################\n"
 		    + "Type and press <ENTER> to send a message\n"
 		    + "Type EXIT and press <ENTER> to exit the client\n"
@@ -334,7 +334,7 @@ void Client::run(std::string serv_ip, std::string port)
 		    + "Type HELP and press <ENTER> to find out more\n"
 		    + "HELP<ENTER>\n"
 		    + "Have fun :)\n\n";
-		std::cout << to_blue(msg);
+		std::cout << to_blue(userIO);
 
 		client_code cc = not_quitting;
 		while (cc != quitting) {
@@ -345,9 +345,9 @@ void Client::run(std::string serv_ip, std::string port)
 			_sock_msgs.clear();
 
 			std::cout << to_cyan(_user.get_nick() + ": ");
-			getline(std::cin, msg);
+			getline(std::cin, userIO);
 
-			cc = parse_user_input(msg);
+			cc = parse_user_input(userIO);
 			if (cc == switching) {
 				_sockptr->close();
 				_sockptr->connect(endpoint);

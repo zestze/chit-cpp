@@ -9,11 +9,11 @@
 #ifndef __SERVER_H__
 #define __SERVER_H__
 
-#include "consts_globs_shared.h"
-#include "servlet.h"
-#include "user.h"
-#include "../libs/sockio.h"
-#include "notifier.h"
+#include "ConstsGlobsShared.h"
+#include "Servlet.h"
+#include "User.h"
+#include "Sockio.h"
+#include "Notifier.h"
 
 #include <iostream>
 #include <string>

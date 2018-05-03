@@ -4,7 +4,7 @@
  * Zeke Reyna
  * @TODO: use std::regex for split_
  */
-#include "sockio.h"
+#include "Sockio.h"
 
 //const int BUFF_SIZE = 1024;
 #define BUFF_SIZE 1024
@@ -66,10 +66,9 @@ std::string sockio::try_reading_from_sock(tcp::socket& sock,
 		//std::cout << "READ FULL_MSG: " << full_msg << std::endl;
 
 	msgs = split(full_msg, "\r\n");
-	for (auto it = msgs.begin(); it != msgs.end(); ++it) {
-		if (*it != "") {
-			sock_msgs.push_back(*it);
-		}
+	for (const std::string& msg : msgs) {
+	    if (!msg.empty())
+	    	sock_msgs.push_back(msg);
 	}
 
 	std::string msg = sock_msgs.front();
@@ -95,9 +94,8 @@ void sockio::update_sockmsgs(tcp::socket& sock,
 		//std::cout << "UPD FULL_MSG: " << full_msg << std::endl;
 
 	msgs = sockio::split(full_msg, "\r\n");
-	for (auto it = msgs.begin(); it != msgs.end(); ++it) {
-		if (*it != "") {
-			sock_msgs.push_back(*it);
-		}
+	for (const std::string& msg : msgs) {
+		if (!msg.empty())
+			sock_msgs.push_back(msg);
 	}
 }

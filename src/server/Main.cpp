@@ -3,7 +3,7 @@
  *
  * Zeke Reyna
  */
-#include "server.h"
+#include "Server.h"
 #include <iostream>
 
 int main(int argc, char **argv)
@@ -12,7 +12,7 @@ int main(int argc, char **argv)
 		std::cerr << "Usage: ./main <server-port>\n";
 		return -1;
 	}
-	int port = atoi(argv[1]);
+	int port = std::stoi(argv[1]);
 
 	Server serv;
 	serv.run(port);
