@@ -1,5 +1,12 @@
 # Chit Client and Server
 
+## current status
+- making changes to project structure, make shared headers available to client and server
+- make a test subdirectory in each folder
+- make shared into a library
+- make sure CMake works
+- make note that files that represent a class are capital, and others are lowercase
+
 ## Summary
 
 Chit is a simple chat service, written in C++11 that is based on a super simplified version of IRC.

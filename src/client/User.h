@@ -7,6 +7,7 @@
 #define __USER_H__
 
 #include <string>
+#include <utility>
 
 // could really just be a struct instead of a class...
 class User
@@ -46,9 +47,9 @@ class User
 
 
 		// member functions
-		void set_nick(std::string new_nick) { nick = new_nick; }
-		void set_pass(std::string new_pass) { password = new_pass; }
-		void set_channel(std::string new_chan) { channel = new_chan; }
+		void set_nick(std::string new_nick) { nick = std::move(new_nick); }
+		void set_pass(std::string new_pass) { password = std::move(new_pass); }
+		void set_channel(std::string new_chan) { channel = std::move(new_chan); }
 
 		std::string get_nick() { return nick; 	   }
 		std::string get_user() { return user_name; }

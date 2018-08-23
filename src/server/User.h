@@ -18,6 +18,7 @@
 #include <string>
 //#include <boost/asio.hpp>
 #include <asio.hpp>
+#include <utility>
 
 using tcp = asio::ip::tcp;
 
@@ -59,10 +60,10 @@ class User
 		~User() = default;
 
 		// member functions
-		void set_nick(std::string new_nick)    { _nick = new_nick; }
-		void set_pass(std::string new_pass)    { _password = new_pass; }
-		void set_channel(std::string new_chan) { _channel = new_chan; }
-		void set_endpoint(const tcp::endpoint new_e)
+		void set_nick(std::string new_nick)    { _nick = std::move(new_nick); }
+		void set_pass(std::string new_pass)    { _password = std::move(new_pass); }
+		void set_channel(std::string new_chan) { _channel = std::move(new_chan); }
+		void set_endpoint(const tcp::endpoint &new_e)
 		{
 			_endpt = new_e;
 		}

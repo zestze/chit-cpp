@@ -8,6 +8,7 @@
  */
 
 #include "Server.h"
+#include <utility>
 
 // ************ GLOBALS ****************
 std::atomic<bool> killself;
@@ -30,7 +31,7 @@ std::string Server::try_reading(tcp::socket& sock)
 
 void Server::try_writing(tcp::socket& sock, std::string msg)
 {
-	sockio::try_writing_to_sock(sock, msg);
+	sockio::try_writing_to_sock(sock, std::move(msg));
 }
 
 User Server::register_session(tcp::socket& sock)

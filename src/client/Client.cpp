@@ -9,6 +9,7 @@
  */
 
 #include "Client.h"
+#include <utility>
 
 bool DEBUG = false;
 //bool DEBUG = true;
@@ -20,7 +21,7 @@ std::string Client::try_reading()
 
 void Client::try_writing(std::string msg)
 {
-	sockio::try_writing_to_sock(*_sockptr, msg);
+	sockio::try_writing_to_sock(*_sockptr, std::move(msg));
 }
 
 void Client::update()
@@ -78,9 +79,9 @@ void Client::pass_user_info_to_server()
 
 std::string Client::parse_topic_msg(std::string msg)
 {
-	std::string new_msg ("");
+	std::string new_msg;
 	std::deque<std::string> parts;
-	parts = sockio::split(msg, ":");
+	parts = sockio::split(std::move(msg), ":");
 	for (auto it = parts.begin(); it != parts.end(); ++it) {
 		if (it == parts.begin())
 			continue;
@@ -95,7 +96,7 @@ std::string Client::parse_topic_msg(std::string msg)
 // lazy... but they do the same thing.
 std::string Client::parse_user_list_msg(std::string msg)
 {
-	return parse_topic_msg(msg);
+	return parse_topic_msg(std::move(msg));
 }
 
 std::string Client::connect_to_channel()

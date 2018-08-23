@@ -8,10 +8,9 @@
 #define __CLIENT_H__
 
 #include "User.h"
-#include "Sockio.h"
+#include <sockio.h>
 
 #include <iostream>
-//#include <boost/asio.hpp>
 #include <asio.hpp>
 #include <string>
 #include <deque>
@@ -32,19 +31,19 @@ std::string const RESERVED_CHARS[3] = {":", "!", "@"};
 
 /*
  */
-std::string inline to_blue(const std::string msg) {
+std::string inline to_blue(const std::string &msg) {
 	return "\033[1;34m" + msg + "\033[0m";
 }
 
 /*
  */
-std::string inline to_cyan(const std::string msg) {
+std::string inline to_cyan(const std::string &msg) {
 	return "\033[1;36m" + msg + "\033[0m";
 }
 
 /*
  */
-std::string inline to_magenta(const std::string msg) {
+std::string inline to_magenta(const std::string &msg) {
 	return "\033[1;35m" + msg + "\033[0m";
 }
 

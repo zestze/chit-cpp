@@ -5,6 +5,7 @@
  */
 
 #include "Servlet.h"
+#include <utility>
 
 std::deque<tcp::socket>::iterator Servlet::get_sock_for_user(User user)
 {
@@ -55,7 +56,7 @@ std::string Servlet::try_reading(User user)
 void Servlet::try_writing(User user, std::string msg)
 {
 	tcp::socket& sock = *get_sock_for_user(user);
-	asio::error_code ec = sockio::try_writing_to_sock(sock, msg);
+	asio::error_code ec = sockio::try_writing_to_sock(sock, std::move(msg));
 	if (ec) {
 		// assume broken sock or something... remove user
 		remove_trace_of(user);
@@ -91,7 +92,7 @@ std::deque<User> Servlet::grab_new()
 
 		_users.push_back(std::move(newu));
 		_end_msgs[newu.get_endpt()]; // initialize
-		for (auto msg : temp_msgs)
+		for (const std::string& msg : temp_msgs)
 			_end_msgs[newu.get_endpt()].push_back(msg);
 
 		// for later handling of new users
@@ -229,7 +230,7 @@ void Servlet::handle_topic(std::string msg, User client)
 	// and to the others, will be similar to a PRIVMSG
 
 	std::string split_here = "TOPIC " + _channel_name + " :";
-	std::deque<std::string> parts = sockio::split(msg, split_here);
+	std::deque<std::string> parts = sockio::split(std::move(msg), split_here);
 	_channel_topic = *--parts.end();
 
 	const tcp::socket& sock = _socks.front();
@@ -285,7 +286,7 @@ void thread_run(std::string channel, Chan_newusers_ptr chan_newusers_ptr,
 	 std::shared_ptr<std::atomic<bool>> notify)
 {
 	try {
-		Servlet servlet(channel, chan_newusers_ptr, global_socks_ptr, gl_lock_ptr);
+		Servlet servlet(std::move(channel), chan_newusers_ptr, global_socks_ptr, gl_lock_ptr);
 		while (!killself) {
 			bool check = servlet.check_newusers(notify);
 			if (check)

@@ -4,7 +4,7 @@
  * Zeke Reyna
  * @TODO: use std::regex for split_
  */
-#include "Sockio.h"
+#include "sockio.h"
 
 //const int BUFF_SIZE = 1024;
 #define BUFF_SIZE 1024
