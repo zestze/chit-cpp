@@ -24,9 +24,9 @@
 #ifndef __SERVLET_H__
 #define __SERVLET_H__
 
-#include "User.h"
+#include <User.h>
 #include "constsGlobsShared.h"
-#include "sockio.h"
+#include <sockio.h>
 
 #include <string>
 #include <iostream>

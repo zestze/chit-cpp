@@ -15,10 +15,8 @@
 #include <deque>
 #include <array>
 #include <string>
-//#include <boost/asio.hpp>
 #include <asio.hpp>
 
-//using boost::asio::ip::tcp;
 using tcp = asio::ip::tcp;
 
 namespace sockio {

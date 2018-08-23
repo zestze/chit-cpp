@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 #include <asio.hpp>
+#include <iostream>
 
 using tcp = asio::ip::tcp;
 
@@ -61,10 +62,10 @@ public:
     }
 
     friend std::ostream& operator << (std::ostream& os, User user) {
-        os << "nick: " << _nick << '\n';
-        os << "user: " << _user_name << '\n';
-        os << "real: " << _real_name << '\n';
-        os << "channel: " << _channel << '\n';
+        os << "nick: " << user._nick << '\n';
+        os << "user: " << user._user_name << '\n';
+        os << "real: " << user._real_name << '\n';
+        os << "channel: " << user._channel << '\n';
         return os;
     }
 

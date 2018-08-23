@@ -7,7 +7,7 @@
 #ifndef __CLIENT_H__
 #define __CLIENT_H__
 
-#include "User.h"
+#include <User.h>
 #include <sockio.h>
 
 #include <iostream>

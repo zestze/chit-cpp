@@ -5,4 +5,3 @@ add_library(
     )
 
 target_include_directories(sockio PUBLIC  "${PROJECT_SOURCE_DIR}/src/shared")
-
