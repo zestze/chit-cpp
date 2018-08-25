@@ -18,4 +18,7 @@ add_executable(
         chitter.h
 )
 
-target_link_libraries(chitter ${LIBPQXX} ${LIBPQ})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/config
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+target_link_libraries(chitter ${LIBPQXX} ${LIBPQ} stdc++fs)

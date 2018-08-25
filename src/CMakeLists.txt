@@ -1,10 +1,7 @@
 
 
-#find_library(LIBPQXX libpqxx)
-#find_library(LIBPQ   libpq)
-
-find_library(LIBPQXX pqxx)
-find_library(LIBPQ pq)
+find_library(LIBPQXX NAMES pqxx libpqxx)
+find_library(LIBPQ NAMES pq libpq)
 
 
 add_subdirectory(shared)
