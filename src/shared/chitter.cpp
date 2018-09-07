@@ -16,6 +16,16 @@
 namespace fs = std::experimental::filesystem::v1;
 using namespace std::literals::string_literals;
 
+template <class T>
+T& chitter::operator << (T& stream, Status status) {
+    switch (status) {
+        case Status::Admin:  stream << "Admin";  break;
+        case Status::User:   stream << "User";   break;
+        case Status::Banned: stream << "Banned"; break;
+    }
+    return stream;
+}
+
 void chitter::load_config() {
     const std::string FILE_NAME = fs::current_path() / "config";
     std::ifstream infile (FILE_NAME, std::ifstream::in);
@@ -71,7 +81,7 @@ bool chitter::checkUserExists(const std::string userID, pqxx::connection& connec
           "WHERE userID = " << work.quote(userID);
     pqxx::result result = work.exec(ss.str());
     work.commit();
-    return result[0][0].as<bool>() == true;
+    return result[0][0].as<bool>();
 }
 
 bool chitter::checkUserExists(const std::string userID) {
@@ -105,7 +115,7 @@ bool chitter::verifyPassword(const std::string userID, const std::string passwor
 }
 
 void chitter::updatePassword(const std::string userID, const std::string newPassword,
-                                pqxx::connection connection) {
+                                pqxx::connection& connection) {
     pqxx::work work(connection);
     std::stringstream ss;
     ss << "UPDATE Users "
@@ -115,7 +125,12 @@ void chitter::updatePassword(const std::string userID, const std::string newPass
     work.commit();
 }
 
-void chitter::insertUser(const User& user, pqxx::connection connection) {
+void chitter::updatePassword(const std::string userID, const std::string newPassword) {
+    pqxx::connection connection = initiate();
+    return updatePassword(userID, newPassword, connection);
+}
+
+void chitter::insertUser(const User& user, pqxx::connection& connection) {
     pqxx::work work(connection);
     std::stringstream ss;
 
@@ -129,7 +144,12 @@ void chitter::insertUser(const User& user, pqxx::connection connection) {
 
 }
 
-std::string chitter::getBio(const std::string userID, pqxx::connection connection) {
+void chitter::insertUser(const User &user) {
+    pqxx::connection connection = initiate();
+    return insertUser(user, connection);
+}
+
+std::string chitter::getBio(const std::string userID, pqxx::connection& connection) {
     pqxx::work work(connection);
     std::stringstream ss;
     ss << "SELECT bio "
@@ -140,7 +160,12 @@ std::string chitter::getBio(const std::string userID, pqxx::connection connectio
     return result[0][0].as<std::string>();
 }
 
-void chitter::updateBio(const std::string userID, const std::string bio, pqxx::connection connection) {
+std::string chitter::getBio(const std::string userID) {
+    pqxx::connection connection = initiate();
+    return getBio(userID, connection);
+}
+
+void chitter::updateBio(const std::string userID, const std::string bio, pqxx::connection& connection) {
     pqxx::work work(connection);
     std::stringstream ss;
     ss << "UPDATE Users "
@@ -150,7 +175,12 @@ void chitter::updateBio(const std::string userID, const std::string bio, pqxx::c
     work.commit();
 }
 
-std::string chitter::getCurrentDatetime(pqxx::connection connection) {
+void chitter::updateBio(const std::string userID, const std::string bio) {
+    pqxx::connection connection = initiate();
+    return updateBio(userID, bio, connection);
+}
+
+std::string chitter::getCurrentDatetime(pqxx::connection& connection) {
     pqxx::work work(connection);
     std::stringstream ss;
     ss << "SELECT CURRENT_TIMESTAMP";
@@ -159,8 +189,13 @@ std::string chitter::getCurrentDatetime(pqxx::connection connection) {
     return result[0][0].as<std::string>();
 }
 
+std::string chitter::getCurrentDatetime() {
+    pqxx::connection connection = initiate();
+    return getCurrentDatetime(connection);
+}
+
 void chitter::insertLogin(const std::string userID,
-    const tcp::endpoint& endpoint, pqxx::connection connection) {
+    const tcp::endpoint& endpoint, pqxx::connection& connection) {
     //@TODO: figure out how to get longitude and latitude
     pqxx::work work(connection);
     std::stringstream ss;
@@ -174,7 +209,12 @@ void chitter::insertLogin(const std::string userID,
     work.commit();
 }
 
-bool chitter::checkServerExists(const std::string serverID, pqxx::connection connection) {
+void chitter::insertLogin(const std::string userID, const tcp::endpoint& endpoint) {
+    pqxx::connection connection = initiate();
+    return insertLogin(userID, endpoint, connection);
+}
+
+bool chitter::checkServerExists(const std::string serverID, pqxx::connection& connection) {
     pqxx::work work(connection);
     std::stringstream ss;
     ss << "SELECT COUNT(1) "
@@ -185,7 +225,12 @@ bool chitter::checkServerExists(const std::string serverID, pqxx::connection con
     return result[0][0].as<bool>();
 }
 
-void chitter::insertServer(const std::string serverID, pqxx::connection connection) {
+bool chitter::checkServerExists(const std::string serverID) {
+    pqxx::connection connection = initiate();
+    return checkServerExists(serverID, connection);
+}
+
+void chitter::insertServer(const std::string serverID, pqxx::connection& connection) {
     pqxx::work work(connection);
     std::stringstream ss;
     ss << "INSERT INTO Servers (serverName) "
@@ -194,9 +239,13 @@ void chitter::insertServer(const std::string serverID, pqxx::connection connecti
     work.commit();
 }
 
+void chitter::insertServer(const std::string serverID) {
+    pqxx::connection connection = initiate();
+    return insertServer(serverID, connection);
+}
 
 void chitter::insertServerMetadata(const std::string serverID, const tcp::endpoint &endpoint,
-                                   pqxx::connection connection) {
+                                   pqxx::connection& connection) {
     //@TODO: find a way to get current longitude and latitude
     //@TODO: write a python server that gets longitude and latitude
     pqxx::work work(connection);
@@ -212,7 +261,12 @@ void chitter::insertServerMetadata(const std::string serverID, const tcp::endpoi
     //printResult(result);
 }
 
-bool chitter::checkChannelExists(const std::string channelName, pqxx::connection connection) {
+void chitter::insertServerMetadata(const std::string serverID, const tcp::endpoint &endpoint) {
+    pqxx::connection connection = initiate();
+    return insertServerMetadata(serverID, endpoint, connection);
+}
+
+bool chitter::checkChannelExists(const std::string channelName, pqxx::connection& connection) {
     pqxx::work work(connection);
     std::stringstream ss;
     ss << "SELECT COUNT(1) "
@@ -223,8 +277,13 @@ bool chitter::checkChannelExists(const std::string channelName, pqxx::connection
     return result[0][0].as<bool>();
 }
 
+bool chitter::checkChannelExists(const std::string channelName) {
+    pqxx::connection connection = initiate();
+    return checkChannelExists(channelName, connection);
+}
+
 void chitter::insertChannel(const std::string channelName, const std::string channelTopic,
-                            const std::string serverName, pqxx::connection connection) {
+                            const std::string serverName, pqxx::connection& connection) {
     pqxx::work work(connection);
     std::stringstream ss;
     ss << "INSERT INTO Channels (channelName, channelTopic, serverName) "
@@ -234,8 +293,13 @@ void chitter::insertChannel(const std::string channelName, const std::string cha
     work.commit();
 }
 
+void chitter::insertChannel(const std::string channelName, const std::string channelTopic, const std::string serverName) {
+    pqxx::connection connection = initiate();
+    return insertChannel(channelName, channelTopic, serverName, connection);
+}
+
 void chitter::insertMsg(const std::string channelName, const std::string userID, const std::string msg,
-                        const std::string serverName, pqxx::connection connection) {
+                        const std::string serverName, pqxx::connection& connection) {
     pqxx::work work(connection);
     std::stringstream ss;
     std::string datetime = getCurrentDatetime();
@@ -246,6 +310,36 @@ void chitter::insertMsg(const std::string channelName, const std::string userID,
     pqxx::result result = work.exec(ss.str());
     work.commit();
 }
+
+void chitter::insertMsg(const std::string channelName, const std::string userID, const std::string msg,
+                        const std::string serverName) {
+    pqxx::connection connection = initiate();
+    return insertMsg(channelName, userID, msg, serverName, connection);
+}
+
+void chitter::insertConnection(const std::string channelID, const User &user, const chitter::Status status,
+                               const std::string serverName, pqxx::connection &connection) {
+    pqxx::work work(connection);
+    std::stringstream ss;
+    ss << "INSERT INTO Connections (userName, serverName, connStatus, displayName)"
+          " VALUES ";
+    std::stringstream workAround;
+    workAround << status;
+    passValues(ss, work, {user.get_nick(), serverName, workAround.str(), user.get_nick()});
+    pqxx::result result = work.exec(ss.str());
+    work.commit();
+}
+
+void chitter::insertConnection(const std::string channelID, const User &user, const chitter::Status status,
+                               const std::string serverName) {
+    pqxx::connection connection = initiate();
+    return insertConnection(channelID, user, status, serverName, connection);
+}
+
+//void chitter::insertConnection(const std::string channelID, const User &user, const chitter::Status status,
+//                               const std::string serverName, const pqxx::connection &connection) {
+//    pqxx::work work(const_cast<pqxx::connection&>(connection));
+//}
 
 // @TODO: left off here, need to stat at insert_connection from chitter.
 
@@ -269,6 +363,8 @@ int main(int argc, char **argv) {
         auto port = std::to_string(end.port());
         passValues(ss, work, {ip, port});
         std::cout << ss.str() << std::endl;
+
+        std::cout << chitter::Status::Admin << std::endl;
 
 
     } catch (const std::exception& e) {

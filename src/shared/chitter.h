@@ -24,7 +24,17 @@ namespace chitter {
         std::string name;
     };
 
+    enum class Status {
+        Admin,
+        User,
+        Banned
+    };
+
+    template <class T>
+    T& operator << (T& stream, const Status status);
+
     void load_config();
+
     pqxx::connection initiate();
 
     bool checkUserExists(const std::string userID, pqxx::connection& connection);
@@ -36,34 +46,66 @@ namespace chitter {
     bool verifyPassword(const std::string userID, const std::string password);
 
     void updatePassword(const std::string userID, const std::string newPassword,
-                        pqxx::connection connection = initiate());
+                        pqxx::connection& connection);
 
-    void insertUser(const User& user, pqxx::connection connection = initiate());
+    void updatePassword(const std::string userID, const std::string newPassword);
 
-    std::string getBio(const std::string userID, pqxx::connection connection = initiate());
+    void insertUser(const User& user, pqxx::connection& connection);
 
-    void updateBio(const std::string userID, const std::string bio, pqxx::connection connection = initiate());
+    void insertUser(const User& user);
 
-    std::string getCurrentDatetime(pqxx::connection connection = initiate());
+    std::string getBio(const std::string userID, pqxx::connection& connection);
+
+    std::string getBio(const std::string userID);
+
+    void updateBio(const std::string userID, const std::string bio, pqxx::connection& connection);
+
+    void updateBio(const std::string userID, const std::string bio);
+
+    std::string getCurrentDatetime(pqxx::connection& connection);
+
+    std::string getCurrentDatetime();
 
     void insertLogin(const std::string userID, const tcp::endpoint& endpoint,
-                        pqxx::connection connection = initiate());
+                        pqxx::connection& connection);
 
-    bool checkServerExists(const std::string serverID, pqxx::connection connection = initiate());
+    void insertLogin(const std::string userID, const tcp::endpoint& endpoint);
 
-    void insertServer(const std::string serverID, pqxx::connection connection = initiate());
+    bool checkServerExists(const std::string serverID, pqxx::connection& connection);
+
+    bool checkServerExists(const std::string serverID);
+
+    void insertServer(const std::string serverID, pqxx::connection& connection);
+
+    void insertServer(const std::string serverID);
 
     void insertServerMetadata(const std::string serverID, const tcp::endpoint& endpoint,
-                        pqxx::connection connection = initiate());
+                        pqxx::connection& connection);
 
-    bool checkChannelExists(const std::string channelName, pqxx::connection connection = initiate());
+    void insertServerMetadata(const std::string serverID, const tcp::endpoint& endpoint);
+
+    bool checkChannelExists(const std::string channelName, pqxx::connection& connection);
+
+    bool checkChannelExists(const std::string channelName);
 
     void insertChannel(const std::string channelName, const std::string channelTopic, const std::string serverName,
-                        pqxx::connection connection = initiate());
+                        pqxx::connection& connection);
+
+    void insertChannel(const std::string channelName, const std::string channelTopic, const std::string serverName);
 
     void insertMsg(const std::string channelName, const std::string userID, const std::string msg,
-                    const std::string serverName, pqxx::connection connection = initiate());
+                    const std::string serverName, pqxx::connection& connection);
 
+    void insertMsg(const std::string channelName, const std::string userID, const std::string msg,
+                   const std::string serverName);
+
+    void insertConnection(const std::string channelID, const User& user, const Status status,
+                          const std::string serverName, pqxx::connection& connection);
+
+    void insertConnection(const std::string channelID, const User& user, const Status status,
+                          const std::string serverName);
+//    void insertConnection(const std::string channelID, const User& user, const Status status,
+//                          const std::string serverName, const pqxx::connection& connection = initiate());
 };
 
 #endif //CHIT_CPP_CHITTER_H
