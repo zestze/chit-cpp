@@ -11,6 +11,11 @@
 #include <sstream>
 #include "User.h"
 #include <asio.hpp>
+//#include <optional>
+#include <experimental/optional>
+//@TODO: figure out why experimental is required for file system and optional.
+
+using StringOpt = std::experimental::optional<std::string>;
 
 namespace chitter {
     using tcp = asio::ip::tcp;
@@ -27,11 +32,16 @@ namespace chitter {
     enum class Status {
         Admin,
         User,
-        Banned
+        Banned,
+        Nonexistent
     };
 
     template <class T>
-    T& operator << (T& stream, const Status status);
+    T& operator << (T& stream, const Status statusEnum);
+
+    std::string getStatusString(const Status statusEnum);
+
+    Status getStatusEnum(const std::string statusString);
 
     void load_config();
 
@@ -106,6 +116,28 @@ namespace chitter {
                           const std::string serverName);
 //    void insertConnection(const std::string channelID, const User& user, const Status status,
 //                          const std::string serverName, const pqxx::connection& connection = initiate());
+
+    std::tuple<Status, std::string> getServerRoles(const std::string userId, const std::string serverName,
+                          pqxx::connection& connection);
+
+    std::tuple<Status, std::string> getServerRoles(const std::string userID, const std::string serverName);
+
+    void insertServerRoles(const std::string userID, const std::string serverName, const Status statusEnum,
+                           StringOpt displayName, pqxx::connection& connection);
+
+    void insertServerRoles(const std::string userID, const std::string serverName, const Status statusEnum,
+                            StringOpt displayName);
+
+    Status getChannelRoles(const std::string userID, const std::string channelName, const std::string serverName,
+                            pqxx::connection& connection);
+
+    Status getChannelRoles(const std::string userID, const std::string channelName, const std::string serverName);
+
+    void insertChannelRoles(const std::string userID, const std::string channelName, const std::string serverName,
+                            const Status statusEnum, pqxx::connection& connection);
+
+    void insertChannelRoles(const std::string userID, const std::string channelName, const std::string serverName,
+                            const Status statusEnum);
 };
 
 #endif //CHIT_CPP_CHITTER_H

@@ -9,6 +9,7 @@
 #include <experimental/filesystem>
 #include <algorithm>
 #include <vector>
+#include <tuple>
 #include "chitter.h"
 //@TODO: finish going though other functions and adding a second overload to them
 //@TODO: akin to checkUserExists and verifyPassword
@@ -17,13 +18,43 @@ namespace fs = std::experimental::filesystem::v1;
 using namespace std::literals::string_literals;
 
 template <class T>
-T& chitter::operator << (T& stream, Status status) {
-    switch (status) {
+T& chitter::operator << (T& stream, const Status statusEnum) {
+    switch (statusEnum) {
         case Status::Admin:  stream << "Admin";  break;
         case Status::User:   stream << "User";   break;
         case Status::Banned: stream << "Banned"; break;
+        case Status::Nonexistent: stream << "Nonexistent"; break;
+        default: break;
     }
     return stream;
+}
+
+std::string chitter::getStatusString(const Status statusEnum) {
+    std::string statusString;
+    switch (statusEnum) {
+        case Status::Admin:  statusString = "Admin";  break;
+        case Status::User:   statusString = "User";   break;
+        case Status::Banned: statusString = "Banned"; break;
+        case Status::Nonexistent: statusString = "Nonexistent"; break;
+        default: break;
+    }
+    return statusString;
+}
+
+chitter::Status chitter::getStatusEnum(const std::string statusString) {
+    Status statusEnum;
+    if (statusString == "Admin") {
+        statusEnum = Status::Admin;
+    } else if (statusString == "User") {
+        statusEnum = Status::User;
+    } else if (statusString == "Banned") {
+        statusEnum = Status::Banned;
+    } else if (statusString == "Nonexistent") {
+        statusEnum = Status::Nonexistent;
+    } else {
+        throw std::runtime_error("don't recognize status string");
+    }
+    return statusEnum;
 }
 
 void chitter::load_config() {
@@ -341,7 +372,85 @@ void chitter::insertConnection(const std::string channelID, const User &user, co
 //    pqxx::work work(const_cast<pqxx::connection&>(connection));
 //}
 
-// @TODO: left off here, need to stat at insert_connection from chitter.
+std::tuple<chitter::Status, std::string> chitter::getServerRoles(const std::string userID, const std::string serverName) {
+    pqxx::connection connection = initiate();
+    return getServerRoles(userID, serverName, connection);
+}
+
+std::tuple<chitter::Status, std::string> chitter::getServerRoles(const std::string userID, const std::string serverName, pqxx::connection &connection) {
+    pqxx::work work(connection);
+    std::stringstream ss;
+    ss << "SELECT permissions, displayName FROM ServerRoles"
+          " WHERE userID = " << work.quote(userID) << " AND serverName = " <<
+       work.quote(serverName);
+    pqxx::result result = work.exec(ss.str());
+    work.commit();
+    return std::tuple<chitter::Status, std::string>{ getStatusEnum(result[0][0].as<std::string>()),
+                  result[0][1].as<std::string>()};
+}
+
+void chitter::insertServerRoles(const std::string userID, const std::string serverName,
+                                const chitter::Status statusEnum, StringOpt displayName) {
+    pqxx::connection connection = initiate();
+    insertServerRoles(userID, serverName, statusEnum, displayName, connection);
+}
+
+void chitter::insertServerRoles(const std::string userID, const std::string serverName,
+                                const chitter::Status statusEnum, StringOpt displayName,
+                                pqxx::connection &connection) {
+    pqxx::work work(connection);
+    if (!displayName) {
+        *displayName = userID;
+    }
+    std::stringstream ss;
+    ss << "INSERT INTO ServerRoles (userID, serverName, permissions, displayName)"
+          " VALUES ";
+    passValues(ss, work, {userID, serverName, getStatusString(statusEnum), *displayName});
+    pqxx::result result = work.exec(ss.str());
+    work.commit();
+}
+
+chitter::Status chitter::getChannelRoles(const std::string userID, const std::string channelName,
+                                         const std::string serverName) {
+    pqxx::connection connection = initiate();
+    return getChannelRoles(userID, channelName, serverName, connection);
+}
+
+chitter::Status chitter::getChannelRoles(const std::string userID, const std::string channelName,
+                                         const std::string serverName, pqxx::connection &connection) {
+    pqxx::work work(connection);
+    std::stringstream ss;
+    ss << "SELECT (permissions) FROM ChannelRoles "
+          "WHERE userID = " << work.quote(userID) << " AND channelName = " << work.quote(channelName)
+       << " AND serverName = " << work.quote(serverName);
+    pqxx::result result = work.exec(ss.str());
+    work.commit();
+    Status statusEnum;
+    if (result.size() == 0)
+        statusEnum = Status::Nonexistent;
+    else
+        statusEnum = getStatusEnum(result[0][0].as<std::string>());
+    return statusEnum;
+}
+
+void chitter::insertChannelRoles(const std::string userID, const std::string channelName, const std::string serverName,
+                                 const chitter::Status statusEnum) {
+    pqxx::connection connection = initiate();
+    return insertChannelRoles(userID, channelName, serverName, statusEnum, connection);
+}
+
+void chitter::insertChannelRoles(const std::string userID, const std::string channelName, const std::string serverName,
+                                 const chitter::Status statusEnum, pqxx::connection &connection) {
+    pqxx::work work(connection);
+    std::stringstream ss;
+    ss << "INSERT INTO ChannelRoles (userID, channelName, serverName, permissions) "
+          "VALUES ";
+    passValues(ss, work, {userID, channelName, serverName, getStatusString(statusEnum)});
+    pqxx::result result = work.exec(ss.str());
+    work.commit();
+}
+
+//@TODO: add friends features, everything else has been added.
 
 int main(int argc, char **argv) {
     try {
@@ -366,6 +475,11 @@ int main(int argc, char **argv) {
 
         std::cout << chitter::Status::Admin << std::endl;
 
+        auto [statusEnum, displayName] = chitter::getServerRoles("khalid", "server3003");
+        std::cout << "getServerRoles == " << statusEnum << " " << displayName << std::endl;
+
+        std::cout << chitter::getChannelRoles("zest", "123", "blah") << std::endl;
+        std::cout << chitter::getChannelRoles("blah", "#fudge", "server2646") << std::endl;
 
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;

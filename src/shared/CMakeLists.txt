@@ -18,6 +18,8 @@ add_executable(
         chitter.h
 )
 
+target_compile_features(chitter PUBLIC cxx_std_17)
+
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/config
         DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
