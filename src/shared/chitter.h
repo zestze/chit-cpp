@@ -14,6 +14,7 @@
 //#include <optional>
 #include <experimental/optional>
 //@TODO: figure out why experimental is required for file system and optional.
+//@TODO: make 'Status' more descriptive
 
 using StringOpt = std::experimental::optional<std::string>;
 
@@ -138,6 +139,20 @@ namespace chitter {
 
     void insertChannelRoles(const std::string userID, const std::string channelName, const std::string serverName,
                             const Status statusEnum);
+
+    bool checkAlreadyFriends(const std::string friend1ID, const std::string friend2ID,
+                            pqxx::connection& connection);
+
+    bool checkAlreadyFriends(const std::string friend1ID, const std::string friend2ID);
+
+    void insertFriend(const std::string userID, const std::string friendUserID,
+                                    pqxx::connection& connection);
+
+    void insertFriend(const std::string userID, const std::string friendUserID);
+
+    std::vector<std::string> fetchFriends(const std::string userID, pqxx::connection& connection);
+
+    std::vector<std::string> fetchFriends(const std::string userID);
 };
 
 #endif //CHIT_CPP_CHITTER_H

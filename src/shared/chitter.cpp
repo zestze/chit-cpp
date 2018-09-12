@@ -11,8 +11,6 @@
 #include <vector>
 #include <tuple>
 #include "chitter.h"
-//@TODO: finish going though other functions and adding a second overload to them
-//@TODO: akin to checkUserExists and verifyPassword
 
 namespace fs = std::experimental::filesystem::v1;
 using namespace std::literals::string_literals;
@@ -129,15 +127,9 @@ bool chitter::verifyPassword(const std::string userID, const std::string passwor
     ss << "SELECT password FROM Users WHERE userid = " << work.quote(userID);
     pqxx::result result = work.exec(ss.str());
     work.commit();
-    bool passwordMatches = false;
-    for (const auto& row : result) {
-        const pqxx::field resultPassword = row[0];
-        if (resultPassword.c_str() == password) {
-            passwordMatches = true;
-            break;
-        }
-    }
-    return passwordMatches;
+    std::string passwordResult = result[0][0].as<std::string>();
+    bool PASSWORD_MATCHES = (passwordResult == password); //@TODO: modify this to do proper password
+    return PASSWORD_MATCHES;
 }
 
 bool chitter::verifyPassword(const std::string userID, const std::string password) {
@@ -164,7 +156,6 @@ void chitter::updatePassword(const std::string userID, const std::string newPass
 void chitter::insertUser(const User& user, pqxx::connection& connection) {
     pqxx::work work(connection);
     std::stringstream ss;
-
     ss << "INSERT INTO Users (userID, password, realName, whoami) "
           "VALUES ";
     passValues(ss, work, {user.get_nick(), user.get_pass(),
@@ -289,7 +280,6 @@ void chitter::insertServerMetadata(const std::string serverID, const tcp::endpoi
     passValues(ss, work, {dateTime, ip, port, serverID});
     pqxx::result result = work.exec(ss.str());
     work.commit();
-    //printResult(result);
 }
 
 void chitter::insertServerMetadata(const std::string serverID, const tcp::endpoint &endpoint) {
@@ -450,7 +440,69 @@ void chitter::insertChannelRoles(const std::string userID, const std::string cha
     work.commit();
 }
 
-//@TODO: add friends features, everything else has been added.
+bool chitter::checkAlreadyFriends(const std::string friend1ID, const std::string friend2ID) {
+    pqxx::connection connection = initiate();
+    return checkAlreadyFriends(friend1ID, friend2ID, connection);
+}
+
+bool chitter::checkAlreadyFriends(const std::string friend1ID, const std::string friend2ID,
+                                  pqxx::connection &connection) {
+    pqxx::work work (connection);
+    std::stringstream ss;
+    ss << "SELECT COUNT (1) "
+          "FROM Friends "
+          "WHERE (friend1ID = " << work.quote(friend1ID) << " AND friend2ID = " << work.quote(friend2ID) << ") "
+          "OR (friend1ID = " << work.quote(friend2ID) << " AND friend2ID = " << work.quote(friend1ID) << ")";
+    pqxx::result result = work.exec(ss.str());
+    work.commit();
+    return result[0][0].as<bool>();
+}
+
+void chitter::insertFriend(const std::string userID, const std::string friendUserID) {
+    pqxx::connection connection = initiate();
+    return insertFriend(userID, friendUserID, connection);
+}
+
+void chitter::insertFriend(const std::string userID, const std::string friendUserID,
+                                                pqxx::connection &connection) {
+    pqxx::work work (connection);
+    std::stringstream ss;
+    ss << "INSERT INTO Friends (friend1ID, friend2ID, established) "
+          "VALUES ";
+    passValues(ss, work, {userID, friendUserID, getCurrentDatetime()});
+    work.exec(ss.str());
+    work.commit();
+}
+
+std::vector<std::string> chitter::fetchFriends(const std::string userID) {
+    pqxx::connection connection = initiate();
+    return fetchFriends(userID, connection);
+}
+
+std::vector<std::string> chitter::fetchFriends(const std::string userID, pqxx::connection &connection) {
+    pqxx::work work (connection);
+    std::stringstream ss;
+    ss << "SELECT DISTINCT friend1ID, friend2ID "
+          "FROM Friends "
+          "WHERE friend1ID = " << work.quote(userID) << " OR friend2ID = " << work.quote(userID);
+    pqxx::result result = work.exec(ss.str());
+    work.commit();
+
+    // now, need to collect and prune results.
+    std::vector<std::string> ids;
+    auto isRedundant = [&ids](const std::string id){
+        return std::find(ids.begin(), ids.end(), id) != ids.end();
+    };
+    for (const auto& row : result) {
+        for (const auto& r : row) {
+            std::string id = r.as<std::string>();
+            const bool IRRELEVANT = (id == userID) || isRedundant(id);
+            if (!IRRELEVANT)
+                ids.push_back(id);
+        }
+    }
+    return ids;
+}
 
 int main(int argc, char **argv) {
     try {
@@ -480,6 +532,10 @@ int main(int argc, char **argv) {
 
         std::cout << chitter::getChannelRoles("zest", "123", "blah") << std::endl;
         std::cout << chitter::getChannelRoles("blah", "#fudge", "server2646") << std::endl;
+
+        for (auto f : chitter::fetchFriends("test1")) {
+            std::cout << "friend: " << f << std::endl;
+        }
 
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
