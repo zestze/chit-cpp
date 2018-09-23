@@ -64,8 +64,6 @@ std::optional<User> Server::register_session(tcp::socket& sock)
 	std::string replyCode;
 	std::string replyMessage;
 	if (!userHandlingSuccessful) {
-	    //@TODO: need to notify user that password was incorrect.
-
 	    // send "<this-IP> 464 <nick> :Password incorrect <nick>!<user>@<their-IP>\r\n"
 	    replyCode = ERR_PASSWDMISMATCH;
 	    replyMessage = ":Password incorrect";

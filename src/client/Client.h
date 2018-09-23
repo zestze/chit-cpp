@@ -53,10 +53,6 @@ enum client_code { quitting, not_quitting, switching };
 
 class Client {
 	public:
-
-        // register db connection on construction
-        Client() :_dbConnection{chitter::initiate("../shared/config")} { }
-
         //@TODO: make constructors and destructors default and delete
 
 		std::string try_reading();
@@ -65,10 +61,9 @@ class Client {
 
 		void update();
 
-		// returns true if should continue, false if shouldn't
-		bool query_and_create();
+		void query_and_create();
 
-		void pass_user_info_to_server();
+		bool pass_user_info_to_server();
 
 		std::string parse_topic_msg(std::string msg);
 

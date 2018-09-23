@@ -65,24 +65,9 @@ void Client::query_and_create()
 
     // create our internal user struct
     _user = User(nick, whoami, real, pass);
-
-    //@TODO: get rid of below, when decided to do all db stuff on server
-    /*
-    // check if user already exists - if so, check for password.
-    const bool USER_EXISTS = chitter::checkUserExists(_user.get_nick(), _dbConnection);
-    bool passwordIsCorrect = true;
-    if (USER_EXISTS) {
-        passwordIsCorrect = chitter::verifyPassword(_user.get_nick(), _user.get_pass(),
-                _dbConnection);
-    } else {
-        chitter::insertUser(_user, _dbConnection);
-    }
-
-    return passwordIsCorrect;
-     */
 }
 
-void Client::pass_user_info_to_server()
+bool Client::pass_user_info_to_server()
 {
 	// send NICK
 	std::string msg = "NICK " + _user.get_nick() + "\r\n";
@@ -100,11 +85,15 @@ void Client::pass_user_info_to_server()
 	try_writing(msg);
 
 	std::string reply = try_reading();
-	if (DEBUG) {
-		std::cout << "DEBUG: should be confirmation message\n";
-		std::cout << reply << "\n";
-	}
-	// @TODO: check if reply has correct reply in it.
+	// reply should have the form
+	// "<their-IP> replyCode <nick> <:replyMessage> <nick>!<user>@<this-IP>"
+	std::deque<std::string> parts = sockio::split(reply, " ");
+
+	// print replyMessage
+	std::cout << to_blue(parts[3].substr(1, std::string::npos) + "\n");
+	//@TODO: 001 is RPL_WELCOME... need to come up with way to distribute IRC constants better.
+	//@TODO: when done above, come here and replace this with a included constant
+	return parts[1] == "001";
 }
 
 std::string Client::parse_topic_msg(std::string msg)
@@ -341,11 +330,7 @@ void Client::run(std::string serv_ip, std::string port)
 		if (serv_ip == "localhost")
 			serv_ip = "127.0.0.1";
 
-		const bool SUCCESS = query_and_create();
-		if (!SUCCESS) {
-		    std::cout << to_blue("password is incorrect. Please try again later\n");
-		    return;
-		}
+		query_and_create();
 
 		asio::io_service io_service;
 		tcp::endpoint endpoint(
@@ -355,7 +340,9 @@ void Client::run(std::string serv_ip, std::string port)
 
 		_sockptr->connect(endpoint);
 
-		pass_user_info_to_server();
+		const bool SUCCESSFUL = pass_user_info_to_server();
+		if (!SUCCESSFUL)
+		    return;
 
 		_channel_name = connect_to_channel();
 		_user.set_channel(_channel_name);
