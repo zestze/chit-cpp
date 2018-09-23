@@ -30,7 +30,7 @@ void Client::update()
 	sockio::update_sockmsgs(*_sockptr, _sock_msgs);
 }
 
-bool Client::query_and_create()
+void Client::query_and_create()
 {
     // get nick
 	std::string msg = std::string("\n")
@@ -66,6 +66,8 @@ bool Client::query_and_create()
     // create our internal user struct
     _user = User(nick, whoami, real, pass);
 
+    //@TODO: get rid of below, when decided to do all db stuff on server
+    /*
     // check if user already exists - if so, check for password.
     const bool USER_EXISTS = chitter::checkUserExists(_user.get_nick(), _dbConnection);
     bool passwordIsCorrect = true;
@@ -77,6 +79,7 @@ bool Client::query_and_create()
     }
 
     return passwordIsCorrect;
+     */
 }
 
 void Client::pass_user_info_to_server()
@@ -89,6 +92,11 @@ void Client::pass_user_info_to_server()
 	// send USER; asterisks for ignored fields
 	msg = "USER " + _user.get_whoami() + " * * :"
 	    + _user.get_real() + "\r\n";
+	try_writing(msg);
+
+	// send PASS
+	//@TODO: need to encrypt or something to make 'secure'
+	msg = "PASS " + _user.get_pass() + "\r\n\r\n";
 	try_writing(msg);
 
 	std::string reply = try_reading();

@@ -34,7 +34,7 @@ void Server::try_writing(tcp::socket& sock, std::string msg)
 	sockio::try_writing_to_sock(sock, std::move(msg));
 }
 
-User Server::register_session(tcp::socket& sock)
+std::optional<User> Server::register_session(tcp::socket& sock)
 {
 	std::string msg = try_reading(sock);
 	// "NICK <nick>"
@@ -44,6 +44,10 @@ User Server::register_session(tcp::socket& sock)
 	// "USER <user-name> * * :<real-name>"
 	std::deque<std::string> parts = sockio::split(msg, " * * :");
 
+	msg = try_reading(sock);
+	// "PASS <password>"
+	std::string password = msg.substr(5, std::string::npos);
+
 	std::string part1, part2;
 	part1 = parts.front();
 	part2 = parts.back();
@@ -51,19 +55,46 @@ User Server::register_session(tcp::socket& sock)
 	user_name = part1.substr(5, std::string::npos);
 	real_name = part2;
 
-	User client(nick, user_name, real_name);
+	User client(nick, user_name, real_name, password);
 	client.set_endpoint(sock.remote_endpoint());
-	// send "<this-IP> 001 <nick> :Welcome to the Internet
-	// Relay Network <nick>!<user>@<their-IP>\r\n"
-	std::string rem_IP = sock.remote_endpoint().address().to_string();
-	std::string loc_IP = sock.local_endpoint().address().to_string();
 
-	msg  = loc_IP + " " + RPL_WELCOME + " " + nick + " :Welcome to"
-	     + " the Internet Relay Network " + nick + "!" + user_name
-	     + "@" + rem_IP + "\r\n";
-	try_writing(sock, msg);
+	std::optional<User> clientOp;
 
-	return client;
+	const bool userHandlingSuccessful = chitter::handleUser(client, _connection);
+	std::string replyCode;
+	std::string replyMessage;
+	if (!userHandlingSuccessful) {
+	    //@TODO: need to notify user that password was incorrect.
+
+	    // send "<this-IP> 464 <nick> :Password incorrect <nick>!<user>@<their-IP>\r\n"
+	    replyCode = ERR_PASSWDMISMATCH;
+	    replyMessage = ":Password incorrect";
+
+	    // set our return value to let caller know that handling was not successful
+	    clientOp = std::nullopt;
+	}
+	else {
+	    // send "<this-IP> 001 <nick> :Welcome to the Internet
+        // Relay Network <nick>!<user>@<their-IP>\r\n"
+        replyCode = RPL_WELCOME;
+        replyMessage = ":Welcome to the Internet Relay Network";
+
+        // set our return value to let caller know that handling was successful
+        clientOp = std::optional<User>(client);
+
+        // also need to register loginInstance for this user
+        chitter::insertLogin(client.get_nick(), sock.remote_endpoint(), _connection);
+	}
+
+    std::string rem_IP = sock.remote_endpoint().address().to_string();
+    std::string loc_IP = sock.local_endpoint().address().to_string();
+
+    msg  = loc_IP + " " + replyCode + " " + nick + " " + replyMessage
+           + " " + nick + "!" + user_name
+           + "@" + rem_IP + "\r\n";
+    try_writing(sock, msg);
+
+	return clientOp;
 }
 
 std::string Server::get_channel_name(tcp::socket& sock)
@@ -93,7 +124,13 @@ void Server::inner_scope_run(asio::io_service& io_service,
 	asio::socket_base::keep_alive option(true);
 	sock.set_option(option);
 
-	User client (register_session(sock));
+	std::optional<User> clientOpt = register_session(sock);
+	if (!clientOpt) {
+	    // don't handle this user
+	    return;
+	}
+	User client (*clientOpt);
+
 	std::string channel (get_channel_name(sock));
 	client.set_channel(channel);
 

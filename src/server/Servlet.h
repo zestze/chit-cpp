@@ -37,6 +37,8 @@
 #include <mutex>
 #include <memory>
 #include <utility>
+#include <pqxx/pqxx>
+#include <chitter.h>
 //using boost::asio::ip::tcp;
 using tcp = asio::ip::tcp;
 
@@ -176,6 +178,9 @@ class Servlet {
 		std::deque<tcp::socket> _socks;
 		std::string _channel_name;
 		std::string _channel_topic;
+
+		// for querying db
+		pqxx::connection _connection = chitter::initiate("../shared/config");
 };
 
 /*

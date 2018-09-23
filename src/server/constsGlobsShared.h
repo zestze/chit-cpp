@@ -17,6 +17,7 @@ const std::string RPL_WELCOME = "001";
 const std::string RPL_TOPIC = "332";
 const std::string RPL_NAMREPLY = "252";
 const std::string RPL_ENDOFNAMES = "366";
+const std::string ERR_PASSWDMISMATCH = "464";
 
 // *************** shared ****************
 // for purpose of telling threads to exit

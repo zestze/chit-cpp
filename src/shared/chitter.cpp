@@ -194,6 +194,22 @@ void chitter::insertUser(const User &user) {
     return insertUser(user, connection);
 }
 
+bool chitter::handleUser(const User& user, pqxx::connection& connection) {
+    const bool USER_EXISTS = checkUserExists(user.get_nick(), connection);
+    bool passwordIsCorrect = true;
+    if (USER_EXISTS) {
+        passwordIsCorrect = verifyPassword(user.get_nick(), user.get_pass(),connection);
+    } else {
+        insertUser(user, connection);
+    }
+    return passwordIsCorrect;
+}
+
+bool chitter::handleUser(const User& user) {
+    pqxx::connection connection = initiate();
+    return handleUser(user, connection);
+}
+
 std::string chitter::getBio(const std::string userID, pqxx::connection& connection) {
     pqxx::work work(connection);
     std::stringstream ss;

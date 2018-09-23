@@ -78,6 +78,13 @@ namespace chitter {
 
     void insertUser(const User& user);
 
+    // does overall 'handling' of a user object.
+    // if exists, checks password. else, inserts user. returns false if password is incorrect for existing user,
+    // else returns true
+    bool handleUser(const User& user, pqxx::connection& connection);
+
+    bool handleUser(const User& user);
+
     std::string getBio(const std::string userID, pqxx::connection& connection);
 
     std::string getBio(const std::string userID);

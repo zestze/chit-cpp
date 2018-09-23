@@ -26,6 +26,9 @@
 #include <atomic>
 //#include <boost/asio.hpp>
 #include <asio.hpp>
+#include <chitter.h>
+#include <pqxx/pqxx>
+#include <optional>
 
 //using boost::asio::ip::tcp;
 using tcp = asio::ip::tcp;
@@ -47,7 +50,7 @@ class Server {
 
 		/*
 		 */
-		User register_session(tcp::socket& sock);
+		std::optional<User> register_session(tcp::socket& sock);
 
 		/*
 		 */
@@ -83,6 +86,8 @@ class Server {
 
 		std::map<std::string, std::thread> _threads;
 
+		// for db querying
+		pqxx::connection _connection = chitter::initiate("../shared/config");
 };
 
 #endif
