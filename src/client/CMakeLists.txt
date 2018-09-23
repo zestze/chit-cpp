@@ -5,3 +5,5 @@ add_executable(client
     )
 
 target_link_libraries(client sockio)
+
+target_link_libraries(client chitter)

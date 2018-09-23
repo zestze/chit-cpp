@@ -10,6 +10,7 @@
 
 #include "Client.h"
 #include <utility>
+#include <chitter.h>
 
 bool DEBUG = false;
 //bool DEBUG = true;
@@ -29,10 +30,10 @@ void Client::update()
 	sockio::update_sockmsgs(*_sockptr, _sock_msgs);
 }
 
-void Client::query_and_create()
+bool Client::query_and_create()
 {
-	std::string msg;
-	msg = std::string("\n") // not sure why have to do this...
+    // get nick
+	std::string msg = std::string("\n")
 	    + "##########################\n"
 	    + "Going to ask for user info...\n"
 	    + "Note: these are reserved characters that cannot be used:\n"
@@ -43,18 +44,39 @@ void Client::query_and_create()
 	std::string nick;
 	getline(std::cin, nick);
 
+	// get whoami
 	struct passwd *pw;
 	uid_t uid;
 	uid = geteuid();
 	pw = getpwuid(uid);
-	std::string user(pw->pw_name);
+	std::string whoami (pw->pw_name);
 
+	// get real name
 	msg  = "What is your real name?\n";
 	std::cout << to_blue(msg);
 	std::string real;
 	getline(std::cin, real);
 
-	_user = User(nick, user, real);
+	// get password
+	msg = "Lastly, what is your password?\n";
+	std::cout << to_blue(msg);
+	std::string pass;
+	getline(std::cin, pass);
+
+    // create our internal user struct
+    _user = User(nick, whoami, real, pass);
+
+    // check if user already exists - if so, check for password.
+    const bool USER_EXISTS = chitter::checkUserExists(_user.get_nick(), _dbConnection);
+    bool passwordIsCorrect = true;
+    if (USER_EXISTS) {
+        passwordIsCorrect = chitter::verifyPassword(_user.get_nick(), _user.get_pass(),
+                _dbConnection);
+    } else {
+        chitter::insertUser(_user, _dbConnection);
+    }
+
+    return passwordIsCorrect;
 }
 
 void Client::pass_user_info_to_server()
@@ -65,7 +87,7 @@ void Client::pass_user_info_to_server()
 	// write to socket
 
 	// send USER; asterisks for ignored fields
-	msg = "USER " + _user.get_user() + " * * :"
+	msg = "USER " + _user.get_whoami() + " * * :"
 	    + _user.get_real() + "\r\n";
 	try_writing(msg);
 
@@ -311,7 +333,11 @@ void Client::run(std::string serv_ip, std::string port)
 		if (serv_ip == "localhost")
 			serv_ip = "127.0.0.1";
 
-		query_and_create();
+		const bool SUCCESS = query_and_create();
+		if (!SUCCESS) {
+		    std::cout << to_blue("password is incorrect. Please try again later\n");
+		    return;
+		}
 
 		asio::io_service io_service;
 		tcp::endpoint endpoint(

@@ -7,6 +7,13 @@ add_executable(server
         Server.h
         Servlet.cpp
         Servlet.h
-        )
+        DbPool.cpp DbPool.h)
 
 target_link_libraries(server Threads::Threads sockio)
+
+target_link_libraries(server chitter)
+
+add_executable(dbPool
+        DbPool.cpp
+        DbPool.h)
+target_link_libraries(dbPool chitter)

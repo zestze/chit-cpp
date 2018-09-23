@@ -55,7 +55,9 @@ chitter::Status chitter::getStatusEnum(const std::string statusString) {
     return statusEnum;
 }
 
-void chitter::load_config() {
+/*
+chitter::DbConfig chitter::loadConfig() {
+    // going to modify loadConfig
     const std::string FILE_NAME = fs::current_path() / "config";
     std::ifstream infile (FILE_NAME, std::ifstream::in);
     std::string line;
@@ -64,8 +66,25 @@ void chitter::load_config() {
     // second line is what holds actual info.
     std::replace(line.begin(), line.end(), ',', ' ');
     std::stringstream ss (line);
-    ss >> db::type >> db::username >> db::password
-       >> db::ip >> db::port >> db::name;
+    DbConfig db;
+    ss >> db.type >> db.username >> db.password
+       >> db.ip >> db.port >> db.name;
+    return db;
+}
+ */
+
+chitter::DbConfig chitter::loadConfig(const std::string fileName) {
+    std::ifstream infile (fileName, std::ifstream::in);
+    std::string line;
+    std::getline (infile, line);
+    std::getline (infile, line);
+    // second line is what holds actual info.
+    std::replace (line.begin(), line.end(), ',', ' ');
+    std::stringstream ss (line);
+    DbConfig db;
+    ss >> db.type >> db.username >> db.password
+       >> db.ip >> db.port >> db.name;
+    return db;
 }
 
 void printResult(const pqxx::result result) {
@@ -93,12 +112,16 @@ void gatherArgs(T t, Targs... targs) {
 
 }
 
-pqxx::connection chitter::initiate() {
+pqxx::connection chitter::initiate(const std::string fileName) {
+    return initiate(loadConfig(fileName));
+}
+
+pqxx::connection chitter::initiate(const DbConfig db) {
     return pqxx::connection (
-            "user=" + db::username +
-            " host=" + db::ip +
-            " password=" + db::password +
-            " dbname=" + db::name
+            "user=" + db.username +
+            " host=" + db.ip +
+            " password=" + db.password +
+            " dbname=" + db.name
             );
 }
 
@@ -159,7 +182,7 @@ void chitter::insertUser(const User& user, pqxx::connection& connection) {
     ss << "INSERT INTO Users (userID, password, realName, whoami) "
           "VALUES ";
     passValues(ss, work, {user.get_nick(), user.get_pass(),
-               user.get_real(), user.get_user()});
+               user.get_real(), user.get_whoami()});
     // @TODO: change user.user to user.whoami
     pqxx::result result = work.exec(ss.str());
     work.commit();
@@ -504,10 +527,11 @@ std::vector<std::string> chitter::fetchFriends(const std::string userID, pqxx::c
     return ids;
 }
 
+/*
 int main(int argc, char **argv) {
     try {
         //@TODO: move main stuff to a testing file
-        chitter::load_config();
+        chitter::loadConfig();
         std::cout << chitter::checkUserExists("zest") << std::endl;
         std::cout << chitter::checkUserExists("zest12342452345") << std::endl;
         std::cout << chitter::verifyPassword("zest", "") << std::endl;
@@ -542,3 +566,4 @@ int main(int argc, char **argv) {
     }
     return 0;
 }
+ */

@@ -16,12 +16,14 @@
 #include <deque>
 #include <memory>
 #include <regex>
+#include <pqxx/pqxx>
 
 // for grabbing username
 #include <unistd.h>
 #include <pwd.h>
 #include <cstdio>
 #include <climits>
+#include <chitter.h>
 // for grabbing username
 
 //using boost::asio::ip::tcp;
@@ -51,13 +53,20 @@ enum client_code { quitting, not_quitting, switching };
 
 class Client {
 	public:
+
+        // register db connection on construction
+        Client() :_dbConnection{chitter::initiate("../shared/config")} { }
+
+        //@TODO: make constructors and destructors default and delete
+
 		std::string try_reading();
 
 		void try_writing(std::string msg);
 
 		void update();
 
-		void query_and_create();
+		// returns true if should continue, false if shouldn't
+		bool query_and_create();
 
 		void pass_user_info_to_server();
 

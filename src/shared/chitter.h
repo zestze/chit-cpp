@@ -21,6 +21,16 @@ using StringOpt = std::experimental::optional<std::string>;
 namespace chitter {
     using tcp = asio::ip::tcp;
 
+    struct DbConfig {
+        std::string type;
+        std::string username;
+        std::string password;
+        std::string ip;
+        std::string port;
+        std::string name;
+    };
+
+    /*
     namespace db {
         std::string type;
         std::string username;
@@ -29,6 +39,7 @@ namespace chitter {
         std::string port;
         std::string name;
     };
+     */
 
     enum class Status {
         Admin,
@@ -44,9 +55,11 @@ namespace chitter {
 
     Status getStatusEnum(const std::string statusString);
 
-    void load_config();
+    DbConfig loadConfig(const std::string fileName = "./config");
 
-    pqxx::connection initiate();
+    pqxx::connection initiate(const std::string fileName = "./config");
+
+    pqxx::connection initiate(const DbConfig db);
 
     bool checkUserExists(const std::string userID, pqxx::connection& connection);
 

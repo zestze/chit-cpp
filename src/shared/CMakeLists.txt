@@ -6,17 +6,17 @@ add_library(
 
 target_include_directories(sockio PUBLIC  "${PROJECT_SOURCE_DIR}/src/shared")
 
-#add_library(
+add_library(chitter STATIC
+        chitter.cpp
+        chitter.h
+)
+
+# to do testing, switch from library to executable, and uncomment main
+#add_executable(
 #        chitter
 #        chitter.cpp
 #        chitter.h
 #)
-
-add_executable(
-        chitter
-        chitter.cpp
-        chitter.h
-)
 
 target_compile_features(chitter PUBLIC cxx_std_17)
 

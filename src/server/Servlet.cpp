@@ -133,7 +133,7 @@ void Servlet::handle_newusers()
 
 		std::string remIP = newuser.get_endpt().address().to_string();
 		std::string msg;
-		msg = newuser.get_nick() + "!" + newuser.get_user() + "@" + remIP
+		msg = newuser.get_nick() + "!" + newuser.get_whoami() + "@" + remIP
 		    + " JOIN " + newuser.get_chan() + "\r\n";
 
 		std::string usernames;
@@ -189,7 +189,7 @@ void Servlet::handle_priv(std::string msg, User client)
 	const tcp::endpoint end = client.get_endpt();
 	std::string clntIP = end.address().to_string();
 	std::string reply;
-	reply = ":" + client.get_nick() + "!" + client.get_user() + "@"
+	reply = ":" + client.get_nick() + "!" + client.get_whoami() + "@"
 	      + clntIP + " " + msg + "\r\n";
 	for (auto& u : _users) {
 		if (u.get_endpt() == end)
@@ -209,7 +209,7 @@ void Servlet::handle_part(std::string msg, User client)
 	const tcp::endpoint end = client.get_endpt();
 	std::string clntIP = end.address().to_string();
 	std::string reply;
-	reply = ":" + client.get_nick() + "!" + client.get_user() + "@"
+	reply = ":" + client.get_nick() + "!" + client.get_whoami() + "@"
 	      + clntIP + " " + msg + "\r\n";
 	for (auto& u : _users) {
 		if (u.get_endpt() == end)
@@ -237,7 +237,7 @@ void Servlet::handle_topic(std::string msg, User client)
 	const std::string locIP = sock.local_endpoint().address().to_string();
 
 	std::string reply;
-	reply = client.get_nick() + "!" + client.get_user() + "@"
+	reply = client.get_nick() + "!" + client.get_whoami() + "@"
 	      + client.get_endpt().address().to_string()
 	      + " TOPIC " + _channel_name + " :"
 	      + _channel_topic + "\r\n";
