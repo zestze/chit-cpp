@@ -7,19 +7,8 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 find_package(Threads REQUIRED)
 
+include_directories("${PROJECT_SOURCE_DIR}/src/shared")
+
 add_subdirectory(src)
 
 add_subdirectory(test)
-
-if(FALSE) # fake a block comment
-
-include_directories(src/client)
-include_directories(src/shared)
-include_directories(src/server)
-
-#enable_testing()
-add_executable(simpleClientTester
-        test/UserTester.cpp)
-target_link_libraries(simpleClientTester gtest gtest_main Threads::Threads)
-
-endif()

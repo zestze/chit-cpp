@@ -11,13 +11,6 @@ add_library(chitter STATIC
         chitter.h
 )
 
-# to do testing, switch from library to executable, and uncomment main
-#add_executable(
-#        chitter
-#        chitter.cpp
-#        chitter.h
-#)
-
 target_compile_features(chitter PUBLIC cxx_std_17)
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/config

@@ -30,17 +30,6 @@ namespace chitter {
         std::string name;
     };
 
-    /*
-    namespace db {
-        std::string type;
-        std::string username;
-        std::string password;
-        std::string ip;
-        std::string port;
-        std::string name;
-    };
-     */
-
     enum class Status {
         Admin,
         User,
