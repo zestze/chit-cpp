@@ -185,10 +185,7 @@ void Server::run(int listen_port)
 				tcp::endpoint(tcp::v4(), listen_port));
 		acceptor.non_blocking(true);
 
-		//@TODO: make this servername an argument that gets passed by
-		//@TODO: whatever calls run()
-		const std::string SERVER_NAME = "testServer";
-		chitter::handleServer(SERVER_NAME, acceptor.local_endpoint());
+		chitter::handleServer(_SERVER_NAME, acceptor.local_endpoint());
 
 		while (!killself) {
 			inner_scope_run(io_service, acceptor);
