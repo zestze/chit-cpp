@@ -8,6 +8,7 @@
 using namespace chitter;
 using namespace std;
 
+//@TODO: make test cases for other functions
 TEST(chitterTest, testUserExists) {
     EXPECT_TRUE(checkUserExists("zest"));
     EXPECT_FALSE(checkUserExists("zest12342452345"));
@@ -47,7 +48,6 @@ TEST(chitterTest, testGetFriends) {
 }
 
 int main(int argc, char **argv) {
-    loadConfig();
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

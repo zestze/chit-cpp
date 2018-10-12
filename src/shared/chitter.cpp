@@ -326,6 +326,21 @@ void chitter::insertServerMetadata(const std::string serverID, const tcp::endpoi
     return insertServerMetadata(serverID, endpoint, connection);
 }
 
+void chitter::handleServer(const std::string serverID,
+        const tcp::endpoint& endpoint, pqxx::connection& connection) {
+    const bool SERVER_EXISTS = checkServerExists(serverID, connection);
+    if (!SERVER_EXISTS) {
+        insertServer(serverID, connection);
+    }
+    insertServerMetadata(serverID, endpoint, connection);
+}
+
+void chitter::handleServer(const std::string serverID,
+        const tcp::endpoint& endpoint) {
+    pqxx::connection connection = initiate();
+    return handleServer(serverID, endpoint, connection);
+}
+
 bool chitter::checkChannelExists(const std::string channelName, pqxx::connection& connection) {
     pqxx::work work(connection);
     std::stringstream ss;

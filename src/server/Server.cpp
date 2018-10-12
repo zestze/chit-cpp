@@ -9,6 +9,7 @@
 
 #include "Server.h"
 #include <utility>
+#include <ircConstants.h>
 
 // ************ GLOBALS ****************
 std::atomic<bool> killself;
@@ -60,10 +61,10 @@ std::optional<User> Server::register_session(tcp::socket& sock)
 
 	std::optional<User> clientOp;
 
-	const bool userHandlingSuccessful = chitter::handleUser(client, _connection);
+	const bool USER_HANDLING_SUCCESSFUL = chitter::handleUser(client, _connection);
 	std::string replyCode;
 	std::string replyMessage;
-	if (!userHandlingSuccessful) {
+	if (!USER_HANDLING_SUCCESSFUL) {
 	    // send "<this-IP> 464 <nick> :Password incorrect <nick>!<user>@<their-IP>\r\n"
 	    replyCode = ERR_PASSWDMISMATCH;
 	    replyMessage = ":Password incorrect";
@@ -144,13 +145,27 @@ void Server::inner_scope_run(asio::io_service& io_service,
 	_notify_of_newusers.update(channel);
 
 	if (!_threads.count(channel)) {
+	    // spin up a thread to represent the created 'channel'
+	    //@TODO: make it so that topic is not default
+	    //@TODO: make it cleaner, so that less args need to be passed.
+	    //auto strings = std::make_tuple(_SERVER_NAME, channel, DEFAULT_TOPIC);
+	    //auto pointers = std::make_tuple(&_chan_newusers_map, &_socks_deq, &_comms_lock);
+	    //std::thread thr(thread_run,
+	    //		strings,
+	    //		pointers,
+	    //		_notify_of_newusers.pass_ptr(channel));
 		std::thread thr(thread_run,
+				_SERVER_NAME,
 				channel,
+				DEFAULT_TOPIC,
 				&_chan_newusers_map,
 				&_socks_deq,
 				&_comms_lock,
 				_notify_of_newusers.pass_ptr(channel));
 		_threads[channel] = std::move(thr);
+
+		// make sure to log into database
+		chitter::insertChannel(channel, DEFAULT_TOPIC, _SERVER_NAME);
 	}
 }
 
@@ -169,6 +184,11 @@ void Server::run(int listen_port)
 		tcp::acceptor acceptor(io_service,
 				tcp::endpoint(tcp::v4(), listen_port));
 		acceptor.non_blocking(true);
+
+		//@TODO: make this servername an argument that gets passed by
+		//@TODO: whatever calls run()
+		const std::string SERVER_NAME = "testServer";
+		chitter::handleServer(SERVER_NAME, acceptor.local_endpoint());
 
 		while (!killself) {
 			inner_scope_run(io_service, acceptor);

@@ -6,6 +6,7 @@
 
 #include "Servlet.h"
 #include <utility>
+#include <ircConstants.h>
 
 std::deque<tcp::socket>::iterator Servlet::get_sock_for_user(User user)
 {
@@ -281,12 +282,13 @@ void Servlet::handle_endmsgs()
 	}
 }
 
-void thread_run(std::string channel, Chan_newusers_ptr chan_newusers_ptr,
+void thread_run(const std::string server, const std::string channel, const std::string topic,
+		Chan_newusers_ptr chan_newusers_ptr,
 	 std::deque<tcp::socket> *global_socks_ptr, std::mutex *gl_lock_ptr,
 	 std::shared_ptr<std::atomic<bool>> notify)
 {
 	try {
-		Servlet servlet(std::move(channel), chan_newusers_ptr, global_socks_ptr, gl_lock_ptr);
+		Servlet servlet(server, std::move(channel), topic, chan_newusers_ptr, global_socks_ptr, gl_lock_ptr);
 		while (!killself) {
 			bool check = servlet.check_newusers(notify);
 			if (check)

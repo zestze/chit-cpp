@@ -104,6 +104,11 @@ namespace chitter {
 
     void insertServerMetadata(const std::string serverID, const tcp::endpoint& endpoint);
 
+    void handleServer(const std::string serverID, const tcp::endpoint& endpoint,
+                        pqxx::connection& connection);
+
+    void handleServer(const std::string serverID, const tcp::endpoint& endpoint);
+
     bool checkChannelExists(const std::string channelName, pqxx::connection& connection);
 
     bool checkChannelExists(const std::string channelName);

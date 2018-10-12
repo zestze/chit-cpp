@@ -1,23 +1,16 @@
 /*
- * consts_globs_shared.h
+ * globals.h
  *
  * Holds all the global constants, structures, and functions
  * that should be included in server.h and servlet.h
+ * for communication purposes
  *
  * Zeke Reyna
  */
 #ifndef __CONSTS_GLOBS_SHARED_H__
 #define __CONSTS_GLOBS_SHARED_H__
 
-#include <string>
 #include <atomic>
-
-// *************** constants ************
-const std::string RPL_WELCOME = "001";
-const std::string RPL_TOPIC = "332";
-const std::string RPL_NAMREPLY = "252";
-const std::string RPL_ENDOFNAMES = "366";
-const std::string ERR_PASSWDMISMATCH = "464";
 
 // *************** shared ****************
 // for purpose of telling threads to exit

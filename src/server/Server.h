@@ -9,7 +9,7 @@
 #ifndef __SERVER_H__
 #define __SERVER_H__
 
-#include "constsGlobsShared.h"
+#include "globals.h"
 #include "Servlet.h"
 #include <User.h>
 #include <sockio.h>
@@ -24,18 +24,27 @@
 #include <thread>
 #include <tuple>
 #include <atomic>
-//#include <boost/asio.hpp>
 #include <asio.hpp>
 #include <chitter.h>
 #include <pqxx/pqxx>
 #include <optional>
 
-//using boost::asio::ip::tcp;
+// some macros for configurable values
+#define DEFAULT_TOPIC "DEFAULT_TOPIC"
+
 using tcp = asio::ip::tcp;
 
 class Server {
 
 	public:
+
+        Server() = delete;
+
+        Server(const std::string serverName)
+        :_SERVER_NAME{serverName}{ }
+
+        //@TODO: get rid of other constructors / etc.
+
 		/*
 		 */
 		void set_globals() { killself = false; }
@@ -88,6 +97,8 @@ class Server {
 
 		// for db querying
 		pqxx::connection _connection = chitter::initiate("../shared/config");
+
+		const std::string _SERVER_NAME;
 };
 
 #endif

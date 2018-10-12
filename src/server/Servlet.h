@@ -25,7 +25,7 @@
 #define __SERVLET_H__
 
 #include <User.h>
-#include "constsGlobsShared.h"
+#include "globals.h"
 #include <sockio.h>
 
 #include <string>
@@ -52,12 +52,12 @@ class Servlet {
 		/*
 		 * This looks gross.
 		 */
-		Servlet(std::string c, Chan_newusers_ptr cnu_ptr,
+		Servlet(std::string s, std::string c, std::string t, Chan_newusers_ptr cnu_ptr,
 			std::deque<asio::ip::tcp::socket> *gs_ptr, std::mutex *gl_ptr)
 			:_chan_newusers_ptr{cnu_ptr}, _global_socks_ptr{gs_ptr},
-			_gl_lock_ptr{gl_ptr}, _channel_name{c}
+			_gl_lock_ptr{gl_ptr}, _channel_name{c}, _server_name{s},
+			_channel_topic{t}
 		{
-			_channel_topic = "DEFAULT TOPIC";
 		}
 
 		/*
@@ -176,8 +176,9 @@ class Servlet {
 		std::map<tcp::endpoint, std::deque<std::string>> _end_msgs;
 		std::deque<User> _users;
 		std::deque<tcp::socket> _socks;
-		std::string _channel_name;
+		const std::string _channel_name;
 		std::string _channel_topic;
+		const std::string _server_name;
 
 		// for querying db
 		pqxx::connection _connection = chitter::initiate("../shared/config");
@@ -185,7 +186,8 @@ class Servlet {
 
 /*
  */
-void thread_run(std::string channel, Chan_newusers_ptr chan_newusers_ptr,
+void thread_run(const std::string server, const std::string channel, const std::string topic,
+		Chan_newusers_ptr chan_newusers_ptr,
 	 std::deque<tcp::socket> *global_socks_ptr, std::mutex *gl_lock_ptr,
 	 std::shared_ptr<std::atomic<bool>> notify);
 #endif

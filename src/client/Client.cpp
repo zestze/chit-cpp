@@ -5,12 +5,14 @@
  *
  * @TODO: fix parse_session_msg, works fine, but handling is inconsistent.
  * @TODO: continue with regex work - initial parsing works, but continued
+ * @TODO: add extra commands... query for channel list, etc.
  * use needs to be verified / changed
  */
 
 #include "Client.h"
 #include <utility>
 #include <chitter.h>
+#include <ircConstants.h>
 
 bool DEBUG = false;
 //bool DEBUG = true;
@@ -91,9 +93,7 @@ bool Client::pass_user_info_to_server()
 
 	// print replyMessage
 	std::cout << to_blue(parts[3].substr(1, std::string::npos) + "\n");
-	//@TODO: 001 is RPL_WELCOME... need to come up with way to distribute IRC constants better.
-	//@TODO: when done above, come here and replace this with a included constant
-	return parts[1] == "001";
+	return parts[1] == RPL_WELCOME;
 }
 
 std::string Client::parse_topic_msg(std::string msg)

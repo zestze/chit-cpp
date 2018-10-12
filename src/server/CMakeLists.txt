@@ -1,5 +1,5 @@
 add_executable(server
-        constsGlobsShared.h
+        globals.h
         main.cpp
         Notifier.cpp
         Notifier.h
