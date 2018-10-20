@@ -165,7 +165,7 @@ void Server::inner_scope_run(asio::io_service& io_service,
 		_threads[channel] = std::move(thr);
 
 		// make sure to log into database
-		chitter::insertChannel(channel, DEFAULT_TOPIC, _SERVER_NAME);
+		chitter::insertChannel(channel, DEFAULT_TOPIC, _SERVER_NAME, _connection);
 	}
 }
 
@@ -185,7 +185,9 @@ void Server::run(int listen_port)
 				tcp::endpoint(tcp::v4(), listen_port));
 		acceptor.non_blocking(true);
 
-		chitter::handleServer(_SERVER_NAME, acceptor.local_endpoint());
+		// create a new server in the database if one does not exist.
+		// regardless, insert a serverMetaData instance
+		chitter::handleServer(_SERVER_NAME, acceptor.local_endpoint(), _connection);
 
 		while (!killself) {
 			inner_scope_run(io_service, acceptor);

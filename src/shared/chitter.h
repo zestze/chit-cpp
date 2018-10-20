@@ -10,6 +10,7 @@
 #include <string>
 #include <sstream>
 #include "User.h"
+#include "status.h"
 #include <asio.hpp>
 //#include <optional>
 #include <experimental/optional>
@@ -29,20 +30,6 @@ namespace chitter {
         std::string port;
         std::string name;
     };
-
-    enum class Status {
-        Admin,
-        User,
-        Banned,
-        Nonexistent
-    };
-
-    template <class T>
-    T& operator << (T& stream, const Status statusEnum);
-
-    std::string getStatusString(const Status statusEnum);
-
-    Status getStatusEnum(const std::string statusString);
 
     DbConfig loadConfig(const std::string fileName = "./config");
 
@@ -91,23 +78,23 @@ namespace chitter {
 
     void insertLogin(const std::string userID, const tcp::endpoint& endpoint);
 
-    bool checkServerExists(const std::string serverID, pqxx::connection& connection);
+    bool checkServerExists(const std::string serverName, pqxx::connection& connection);
 
-    bool checkServerExists(const std::string serverID);
+    bool checkServerExists(const std::string serverName);
 
-    void insertServer(const std::string serverID, pqxx::connection& connection);
+    void insertServer(const std::string serverName, pqxx::connection& connection);
 
-    void insertServer(const std::string serverID);
+    void insertServer(const std::string serverName);
 
-    void insertServerMetadata(const std::string serverID, const tcp::endpoint& endpoint,
+    void insertServerMetadata(const std::string serverName, const tcp::endpoint& endpoint,
                         pqxx::connection& connection);
 
-    void insertServerMetadata(const std::string serverID, const tcp::endpoint& endpoint);
+    void insertServerMetadata(const std::string serverName, const tcp::endpoint& endpoint);
 
-    void handleServer(const std::string serverID, const tcp::endpoint& endpoint,
+    void handleServer(const std::string serverName, const tcp::endpoint& endpoint,
                         pqxx::connection& connection);
 
-    void handleServer(const std::string serverID, const tcp::endpoint& endpoint);
+    void handleServer(const std::string serverName, const tcp::endpoint& endpoint);
 
     bool checkChannelExists(const std::string channelName, pqxx::connection& connection);
 

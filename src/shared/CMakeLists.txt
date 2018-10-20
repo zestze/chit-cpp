@@ -8,8 +8,7 @@ target_include_directories(sockio PUBLIC  "${PROJECT_SOURCE_DIR}/src/shared")
 
 add_library(chitter STATIC
         chitter.cpp
-        chitter.h
-)
+        chitter.h)
 
 target_compile_features(chitter PUBLIC cxx_std_17)
 

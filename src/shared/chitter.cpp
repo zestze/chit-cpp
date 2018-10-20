@@ -15,63 +15,13 @@
 namespace fs = std::experimental::filesystem::v1;
 using namespace std::literals::string_literals;
 
-template <class T>
-T& chitter::operator << (T& stream, const Status statusEnum) {
-    switch (statusEnum) {
-        case Status::Admin:  stream << "Admin";  break;
-        case Status::User:   stream << "User";   break;
-        case Status::Banned: stream << "Banned"; break;
-        case Status::Nonexistent: stream << "Nonexistent"; break;
-        default: break;
+void printResult(const pqxx::result result) {
+    for (int i = 0; i < result.size(); i++) {
+        for (int j = 0; j < result[i].size(); j++) {
+            std::cout << "result[" << i << "][" << j << "] == " << result[i][j] << std::endl;
+        }
     }
-    return stream;
 }
-
-std::string chitter::getStatusString(const Status statusEnum) {
-    std::string statusString;
-    switch (statusEnum) {
-        case Status::Admin:  statusString = "Admin";  break;
-        case Status::User:   statusString = "User";   break;
-        case Status::Banned: statusString = "Banned"; break;
-        case Status::Nonexistent: statusString = "Nonexistent"; break;
-        default: break;
-    }
-    return statusString;
-}
-
-chitter::Status chitter::getStatusEnum(const std::string statusString) {
-    Status statusEnum;
-    if (statusString == "Admin") {
-        statusEnum = Status::Admin;
-    } else if (statusString == "User") {
-        statusEnum = Status::User;
-    } else if (statusString == "Banned") {
-        statusEnum = Status::Banned;
-    } else if (statusString == "Nonexistent") {
-        statusEnum = Status::Nonexistent;
-    } else {
-        throw std::runtime_error("don't recognize status string");
-    }
-    return statusEnum;
-}
-
-/*
-chitter::DbConfig chitter::loadConfig() {
-    // going to modify loadConfig
-    const std::string FILE_NAME = fs::current_path() / "config";
-    std::ifstream infile (FILE_NAME, std::ifstream::in);
-    std::string line;
-    std::getline(infile, line);
-    std::getline(infile, line);
-    // second line is what holds actual info.
-    std::replace(line.begin(), line.end(), ',', ' ');
-    std::stringstream ss (line);
-    DbConfig db;
-    ss >> db.type >> db.username >> db.password
-       >> db.ip >> db.port >> db.name;
-    return db;
-}
- */
 
 chitter::DbConfig chitter::loadConfig(const std::string fileName) {
     std::ifstream infile (fileName, std::ifstream::in);
@@ -85,14 +35,6 @@ chitter::DbConfig chitter::loadConfig(const std::string fileName) {
     ss >> db.type >> db.username >> db.password
        >> db.ip >> db.port >> db.name;
     return db;
-}
-
-void printResult(const pqxx::result result) {
-    for (int i = 0; i < result.size(); i++) {
-        for (int j = 0; j < result[i].size(); j++) {
-            std::cout << "result[" << i << "][" << j << "] == " << result[i][j] << std::endl;
-        }
-    }
 }
 
 void passValues(std::stringstream& ss, pqxx::work& work,
@@ -258,11 +200,11 @@ std::string chitter::getCurrentDatetime() {
 void chitter::insertLogin(const std::string userID,
     const tcp::endpoint& endpoint, pqxx::connection& connection) {
     //@TODO: figure out how to get longitude and latitude
+    std::string datetime = getCurrentDatetime(connection);
     pqxx::work work(connection);
     std::stringstream ss;
     std::string ip = endpoint.address().to_string();
     auto port = std::to_string(endpoint.port());
-    std::string datetime = getCurrentDatetime();
     ss << "INSERT INTO UserMetaData (loginIp, loginPort, loginTime, userID) "
           "VALUES ";
     passValues(ss, work, {ip, port, datetime, userID});
@@ -275,70 +217,70 @@ void chitter::insertLogin(const std::string userID, const tcp::endpoint& endpoin
     return insertLogin(userID, endpoint, connection);
 }
 
-bool chitter::checkServerExists(const std::string serverID, pqxx::connection& connection) {
+bool chitter::checkServerExists(const std::string serverName, pqxx::connection& connection) {
     pqxx::work work(connection);
     std::stringstream ss;
     ss << "SELECT COUNT(1) "
           "FROM Servers "
-          "WHERE serverID = " << work.quote(serverID);
+          "WHERE serverName = " << work.quote(serverName);
     pqxx::result result = work.exec(ss.str());
     work.commit();
     return result[0][0].as<bool>();
 }
 
-bool chitter::checkServerExists(const std::string serverID) {
+bool chitter::checkServerExists(const std::string serverName) {
     pqxx::connection connection = initiate();
-    return checkServerExists(serverID, connection);
+    return checkServerExists(serverName, connection);
 }
 
-void chitter::insertServer(const std::string serverID, pqxx::connection& connection) {
+void chitter::insertServer(const std::string serverName, pqxx::connection& connection) {
     pqxx::work work(connection);
     std::stringstream ss;
     ss << "INSERT INTO Servers (serverName) "
-          " VALUES (" << work.quote(serverID) << ")";
+          " VALUES (" << work.quote(serverName) << ")";
     pqxx::result result = work.exec(ss.str());
     work.commit();
 }
 
-void chitter::insertServer(const std::string serverID) {
+void chitter::insertServer(const std::string serverName) {
     pqxx::connection connection = initiate();
-    return insertServer(serverID, connection);
+    return insertServer(serverName, connection);
 }
 
-void chitter::insertServerMetadata(const std::string serverID, const tcp::endpoint &endpoint,
+void chitter::insertServerMetadata(const std::string serverName, const tcp::endpoint &endpoint,
                                    pqxx::connection& connection) {
     //@TODO: find a way to get current longitude and latitude
     //@TODO: write a python server that gets longitude and latitude
+    std::string dateTime = getCurrentDatetime(connection);
     pqxx::work work(connection);
-    std::string dateTime = getCurrentDatetime();
     std::string ip = endpoint.address().to_string();
     std::string port = std::to_string(endpoint.port());
     std::stringstream ss;
-    ss << "INSERT INTO ServerMetadata (startupTime, privateIP, privatePort, serverName "
+    ss << "INSERT INTO ServerMetadata (startupTime, privateIP, privatePort, serverName) "
           " VALUES ";
-    passValues(ss, work, {dateTime, ip, port, serverID});
+    passValues(ss, work, {dateTime, ip, port, serverName});
     pqxx::result result = work.exec(ss.str());
     work.commit();
 }
 
-void chitter::insertServerMetadata(const std::string serverID, const tcp::endpoint &endpoint) {
+void chitter::insertServerMetadata(const std::string serverName, const tcp::endpoint &endpoint) {
     pqxx::connection connection = initiate();
-    return insertServerMetadata(serverID, endpoint, connection);
+    return insertServerMetadata(serverName, endpoint, connection);
 }
 
-void chitter::handleServer(const std::string serverID,
+void chitter::handleServer(const std::string serverName,
         const tcp::endpoint& endpoint, pqxx::connection& connection) {
-    const bool SERVER_EXISTS = checkServerExists(serverID, connection);
+    const bool SERVER_EXISTS = checkServerExists(serverName, connection);
     if (!SERVER_EXISTS) {
-        insertServer(serverID, connection);
+        insertServer(serverName, connection);
     }
-    insertServerMetadata(serverID, endpoint, connection);
+    insertServerMetadata(serverName, endpoint, connection);
 }
 
-void chitter::handleServer(const std::string serverID,
+void chitter::handleServer(const std::string serverName,
         const tcp::endpoint& endpoint) {
     pqxx::connection connection = initiate();
-    return handleServer(serverID, endpoint, connection);
+    return handleServer(serverName, endpoint, connection);
 }
 
 bool chitter::checkChannelExists(const std::string channelName, pqxx::connection& connection) {
@@ -375,9 +317,9 @@ void chitter::insertChannel(const std::string channelName, const std::string cha
 
 void chitter::insertMsg(const std::string channelName, const std::string userID, const std::string msg,
                         const std::string serverName, pqxx::connection& connection) {
+    std::string datetime = getCurrentDatetime(connection);
     pqxx::work work(connection);
     std::stringstream ss;
-    std::string datetime = getCurrentDatetime();
     //@TODO: note, pythong has msg = msg[msg.find(":") + 1:]
     ss << "INSERT INTO ChatLogs (userID, originTime, content, channelName, serverName) "
           "VALUES ";
@@ -392,7 +334,7 @@ void chitter::insertMsg(const std::string channelName, const std::string userID,
     return insertMsg(channelName, userID, msg, serverName, connection);
 }
 
-void chitter::insertConnection(const std::string channelID, const User &user, const chitter::Status status,
+void chitter::insertConnection(const std::string channelID, const User &user, const Status status,
                                const std::string serverName, pqxx::connection &connection) {
     pqxx::work work(connection);
     std::stringstream ss;
@@ -405,23 +347,23 @@ void chitter::insertConnection(const std::string channelID, const User &user, co
     work.commit();
 }
 
-void chitter::insertConnection(const std::string channelID, const User &user, const chitter::Status status,
+void chitter::insertConnection(const std::string channelID, const User &user, const Status status,
                                const std::string serverName) {
     pqxx::connection connection = initiate();
     return insertConnection(channelID, user, status, serverName, connection);
 }
 
-//void chitter::insertConnection(const std::string channelID, const User &user, const chitter::Status status,
+//void chitter::insertConnection(const std::string channelID, const User &user, const Status status,
 //                               const std::string serverName, const pqxx::connection &connection) {
 //    pqxx::work work(const_cast<pqxx::connection&>(connection));
 //}
 
-std::tuple<chitter::Status, std::string> chitter::getServerRoles(const std::string userID, const std::string serverName) {
+std::tuple<Status, std::string> chitter::getServerRoles(const std::string userID, const std::string serverName) {
     pqxx::connection connection = initiate();
     return getServerRoles(userID, serverName, connection);
 }
 
-std::tuple<chitter::Status, std::string> chitter::getServerRoles(const std::string userID, const std::string serverName, pqxx::connection &connection) {
+std::tuple<Status, std::string> chitter::getServerRoles(const std::string userID, const std::string serverName, pqxx::connection &connection) {
     pqxx::work work(connection);
     std::stringstream ss;
     ss << "SELECT permissions, displayName FROM ServerRoles"
@@ -429,18 +371,18 @@ std::tuple<chitter::Status, std::string> chitter::getServerRoles(const std::stri
        work.quote(serverName);
     pqxx::result result = work.exec(ss.str());
     work.commit();
-    return std::tuple<chitter::Status, std::string>{ getStatusEnum(result[0][0].as<std::string>()),
+    return std::tuple<Status, std::string>{ getStatusEnum(result[0][0].as<std::string>()),
                   result[0][1].as<std::string>()};
 }
 
 void chitter::insertServerRoles(const std::string userID, const std::string serverName,
-                                const chitter::Status statusEnum, StringOpt displayName) {
+                                const Status statusEnum, StringOpt displayName) {
     pqxx::connection connection = initiate();
     insertServerRoles(userID, serverName, statusEnum, displayName, connection);
 }
 
 void chitter::insertServerRoles(const std::string userID, const std::string serverName,
-                                const chitter::Status statusEnum, StringOpt displayName,
+                                const Status statusEnum, StringOpt displayName,
                                 pqxx::connection &connection) {
     pqxx::work work(connection);
     if (!displayName) {
@@ -454,13 +396,13 @@ void chitter::insertServerRoles(const std::string userID, const std::string serv
     work.commit();
 }
 
-chitter::Status chitter::getChannelRoles(const std::string userID, const std::string channelName,
+Status chitter::getChannelRoles(const std::string userID, const std::string channelName,
                                          const std::string serverName) {
     pqxx::connection connection = initiate();
     return getChannelRoles(userID, channelName, serverName, connection);
 }
 
-chitter::Status chitter::getChannelRoles(const std::string userID, const std::string channelName,
+Status chitter::getChannelRoles(const std::string userID, const std::string channelName,
                                          const std::string serverName, pqxx::connection &connection) {
     pqxx::work work(connection);
     std::stringstream ss;
@@ -478,13 +420,13 @@ chitter::Status chitter::getChannelRoles(const std::string userID, const std::st
 }
 
 void chitter::insertChannelRoles(const std::string userID, const std::string channelName, const std::string serverName,
-                                 const chitter::Status statusEnum) {
+                                 const Status statusEnum) {
     pqxx::connection connection = initiate();
     return insertChannelRoles(userID, channelName, serverName, statusEnum, connection);
 }
 
 void chitter::insertChannelRoles(const std::string userID, const std::string channelName, const std::string serverName,
-                                 const chitter::Status statusEnum, pqxx::connection &connection) {
+                                 const Status statusEnum, pqxx::connection &connection) {
     pqxx::work work(connection);
     std::stringstream ss;
     ss << "INSERT INTO ChannelRoles (userID, channelName, serverName, permissions) "
@@ -519,11 +461,12 @@ void chitter::insertFriend(const std::string userID, const std::string friendUse
 
 void chitter::insertFriend(const std::string userID, const std::string friendUserID,
                                                 pqxx::connection &connection) {
+    std::string dateTime = getCurrentDatetime(connection);
     pqxx::work work (connection);
     std::stringstream ss;
     ss << "INSERT INTO Friends (friend1ID, friend2ID, established) "
           "VALUES ";
-    passValues(ss, work, {userID, friendUserID, getCurrentDatetime()});
+    passValues(ss, work, {userID, friendUserID, dateTime});
     work.exec(ss.str());
     work.commit();
 }

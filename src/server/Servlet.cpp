@@ -198,6 +198,12 @@ void Servlet::handle_priv(std::string msg, User client)
 		// broadcast PRIVMSG to members besides one who sent it
 		try_writing(u, reply);
 	}
+
+	// then, log msg into database.
+	// get substring, so that only the _actual_ message content is sent to database.
+	std::size_t pos = msg.find(":");
+	chitter::insertMsg(_channel_name, client.get_nick(), msg.substr(pos + 1),
+			_server_name, _connection);
 }
 
 void Servlet::handle_part(std::string msg, User client)
