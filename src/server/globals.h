@@ -14,7 +14,6 @@
 
 // *************** shared ****************
 // for purpose of telling threads to exit
-//@TODO: get rid of, instead pass pointer to atomic from server instance to its servlets.
-extern std::atomic<bool> killself;
+extern std::atomic<bool> selfdestruct;
 
 #endif

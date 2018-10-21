@@ -295,7 +295,7 @@ void thread_run(const std::string server, const std::string channel, const std::
 {
 	try {
 		Servlet servlet(server, std::move(channel), topic, chan_newusers_ptr, global_socks_ptr, gl_lock_ptr);
-		while (!killself) {
+		while (!selfdestruct) {
 			bool check = servlet.check_newusers(notify);
 			if (check)
 				servlet.handle_newusers();

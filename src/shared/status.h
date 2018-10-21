@@ -16,7 +16,7 @@ enum class Status {
 };
 
 template <class T>
-T& operator << (T& stream, const Status statusEnum) {
+inline T& operator << (T& stream, const Status statusEnum) {
     switch (statusEnum) {
         case Status::Admin:  stream << "Admin";  break;
         case Status::User:   stream << "User";   break;
@@ -27,7 +27,7 @@ T& operator << (T& stream, const Status statusEnum) {
     return stream;
 }
 
-std::string getStatusString(const Status statusEnum) {
+inline std::string getStatusString(const Status statusEnum) {
     std::string statusString;
     switch (statusEnum) {
         case Status::Admin:  statusString = "Admin";  break;
@@ -39,7 +39,7 @@ std::string getStatusString(const Status statusEnum) {
     return statusString;
 }
 
-Status getStatusEnum(const std::string statusString) {
+inline Status getStatusEnum(const std::string statusString) {
     Status statusEnum;
     if (statusString == "Admin") {
         statusEnum = Status::Admin;

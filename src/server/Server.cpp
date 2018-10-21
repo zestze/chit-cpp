@@ -12,13 +12,13 @@
 #include <ircConstants.h>
 
 // ************ GLOBALS ****************
-std::atomic<bool> killself;
+std::atomic<bool> selfdestruct;
 // ************ GLOBALS ****************
 
 void signal_handler(int signal)
 {
 	if (signal)
-		killself = true;
+		selfdestruct = true;
 }
 
 std::string Server::try_reading(tcp::socket& sock)
@@ -189,11 +189,11 @@ void Server::run(int listen_port)
 		// regardless, insert a serverMetaData instance
 		chitter::handleServer(_SERVER_NAME, acceptor.local_endpoint(), _connection);
 
-		while (!killself) {
+		while (!selfdestruct) {
 			inner_scope_run(io_service, acceptor);
 		}
 
-		std::cout << "\ngot signal to killself, going to cleanup _threads\n";
+		std::cout << "\ngot signal to selfdestruct, going to cleanup _threads\n";
 		for (auto& t : _threads)
 			t.second.join();
 	}
@@ -201,7 +201,7 @@ void Server::run(int listen_port)
 	{
 		std::cerr << e.what() << "\n";
 
-		killself = true; // atomic
+		selfdestruct = true; // atomic
 		for (auto& t : _threads)
 			t.second.join();
 	}

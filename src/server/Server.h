@@ -47,7 +47,7 @@ class Server {
 
 		/*
 		 */
-		void set_globals() { killself = false; }
+		void set_globals() { selfdestruct = false; }
 
 		/*
 		 */
