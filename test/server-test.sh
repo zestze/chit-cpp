@@ -14,5 +14,14 @@
 #cmake ..
 #cd src/server
 
-cd ../cmake-build-debug/src/server
+#cd ../cmake-build-debug/src/server
+#./server 8081
+
+cd ..
+rm -rf tmp
+mkdir tmp
+cd tmp
+cmake ..
+make
+cd src/server
 ./server 8081
