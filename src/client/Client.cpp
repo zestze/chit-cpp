@@ -11,7 +11,7 @@
 
 #include "Client.h"
 #include <utility>
-#include <chitter.h>
+#include <chitter/chitter.h>
 #include <ircConstants.h>
 
 bool DEBUG = false;

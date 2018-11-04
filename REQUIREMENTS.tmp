@@ -1,8 +1,0 @@
-# Temp Requirements for Running
-
-- Cmake version of 3.10 or greater
-- Asio c++ library
-- for testing need GoogleTest and GoogleMock
-- c++ compiler capable of compiling c++17
-    - thus, either g++ or clang++
-- libqxx and libq (C++ and C psql libraries) 

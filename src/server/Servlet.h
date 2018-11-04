@@ -38,12 +38,14 @@
 #include <memory>
 #include <utility>
 #include <pqxx/pqxx>
-#include <chitter.h>
+#include <chitter/chitter.h>
 //using boost::asio::ip::tcp;
 using tcp = asio::ip::tcp;
 
+using MsgList = std::deque<std::string>;
+using SocketList = std::deque<tcp::socket>;
 using Chan_newusers_ptr = std::map<std::string, std::deque<std::tuple<User,
-      std::deque<std::string>>>> *;
+      MsgList>>> *;
 
 class Servlet {
 	public:
@@ -74,7 +76,7 @@ class Servlet {
 
 		/*
 		 */
-		std::deque<tcp::socket>::iterator get_sock_for_user(User user);
+		SocketList::iterator get_sock_for_user(User user);
 
 		/*
 		 */
@@ -168,14 +170,14 @@ class Servlet {
 	private:
 		// for comms with main thread
 		Chan_newusers_ptr _chan_newusers_ptr;
-		std::deque<tcp::socket> *_global_socks_ptr;
+		SocketList *_global_socks_ptr;
 		std::mutex *_gl_lock_ptr;
 		// for comms with main thread
 
 
-		std::map<tcp::endpoint, std::deque<std::string>> _end_msgs;
+		std::map<tcp::endpoint, MsgList> _end_msgs;
 		std::deque<User> _users;
-		std::deque<tcp::socket> _socks;
+		SocketList _socks;
 		const std::string _channel_name;
 		std::string _channel_topic;
 		const std::string _server_name;
@@ -188,6 +190,6 @@ class Servlet {
  */
 void thread_run(const std::string server, const std::string channel, const std::string topic,
 		Chan_newusers_ptr chan_newusers_ptr,
-	 std::deque<tcp::socket> *global_socks_ptr, std::mutex *gl_lock_ptr,
+	 SocketList *global_socks_ptr, std::mutex *gl_lock_ptr,
 	 std::shared_ptr<std::atomic<bool>> notify);
 #endif

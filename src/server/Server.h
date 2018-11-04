@@ -25,9 +25,8 @@
 #include <tuple>
 #include <atomic>
 #include <asio.hpp>
-#include <chitter.h>
+#include <chitter/chitter.h>
 #include <pqxx/pqxx>
-#include <optional>
 
 // some macros for configurable values
 #define DEFAULT_TOPIC "DEFAULT_TOPIC"
@@ -36,17 +35,24 @@ using tcp = asio::ip::tcp;
 
 class Server {
 
+	using UserSuccessPair = std::pair<User, bool>;
+	using MsgList = std::deque<std::string>;
+	using SocketList = std::deque<tcp::socket>;
+
 	public:
 
+
+        // *******************
+        // *******************
         Server() = delete;
 
+        // *******************
+        // *******************
         Server(const std::string serverName)
         :_SERVER_NAME{serverName}{ }
 
-        //@TODO: get rid of other constructors / etc.
-
-		/*
-		 */
+        // *******************
+        // *******************
 		void set_globals() { selfdestruct = false; }
 
 		/*
@@ -59,7 +65,7 @@ class Server {
 
 		/*
 		 */
-		std::optional<User> register_session(tcp::socket& sock);
+		UserSuccessPair register_session(tcp::socket& sock);
 
 		/*
 		 */
@@ -67,7 +73,7 @@ class Server {
 
 		/*
 		 */
-		void update_comm_structs(User& u, std::deque<std::string>& msgs,
+		void update_comm_structs(User& u, MsgList& msgs,
 				tcp::socket& sock);
 
 		/*
@@ -80,13 +86,13 @@ class Server {
 		void run(int listen_port);
 
 	private:
-		std::map<tcp::endpoint, std::deque<std::string>> _end_msgs;
+		std::map<tcp::endpoint, MsgList> _end_msgs;
 
 		// these are for passing info to threads
 		std::map<std::string, std::deque<std::tuple<User, std::deque<
 			std::string>>>> _chan_newusers_map;
 
-		std::deque<tcp::socket> _socks_deq;
+		SocketList _socks_deq;
 
 		std::mutex _comms_lock;
 

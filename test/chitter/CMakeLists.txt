@@ -6,5 +6,5 @@ target_link_libraries(chitterTest ${GTEST_LIBRARIES}
         ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(chitterTest chitter)
 
-file(COPY ${PROJECT_SOURCE_DIR}/src/shared/config
+file(COPY ../../src/shared/chitter/config
         DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

@@ -23,10 +23,8 @@ void signal_handler(int signal)
 
 std::string Server::try_reading(tcp::socket& sock)
 {
-	tcp::endpoint end = sock.remote_endpoint();
-	if (!_end_msgs.count(end))
-		_end_msgs[end]; // instantiate bc i'm nervous
-	std::deque<std::string>& sock_msgs = _end_msgs[end];
+	const tcp::endpoint END_POINT = sock.remote_endpoint();
+	MsgList& sock_msgs = _end_msgs[END_POINT];
 	return sockio::try_reading_from_sock(sock, sock_msgs);
 }
 
@@ -35,7 +33,7 @@ void Server::try_writing(tcp::socket& sock, std::string msg)
 	sockio::try_writing_to_sock(sock, std::move(msg));
 }
 
-std::optional<User> Server::register_session(tcp::socket& sock)
+Server::UserSuccessPair Server::register_session(tcp::socket& sock)
 {
 	std::string msg = try_reading(sock);
 	// "NICK <nick>"
@@ -43,23 +41,19 @@ std::optional<User> Server::register_session(tcp::socket& sock)
 
 	msg = try_reading(sock);
 	// "USER <user-name> * * :<real-name>"
-	std::deque<std::string> parts = sockio::split(msg, " * * :");
+	MsgList parts = sockio::split(msg, " * * :");
 
 	msg = try_reading(sock);
 	// "PASS <password>"
 	std::string password = msg.substr(5, std::string::npos);
 
-	std::string part1, part2;
-	part1 = parts.front();
-	part2 = parts.back();
-	std::string user_name, real_name;
-	user_name = part1.substr(5, std::string::npos);
-	real_name = part2;
+	const std::string PART1 = parts.front();
+	const std::string PART2 = parts.back();
+	const std::string USER_NAME = PART1.substr(5, std::string::npos);
+	const std::string REAL_NAME = PART2;
 
-	User client(nick, user_name, real_name, password);
+	User client(nick, USER_NAME, REAL_NAME, password);
 	client.set_endpoint(sock.remote_endpoint());
-
-	std::optional<User> clientOp;
 
 	const bool USER_HANDLING_SUCCESSFUL = chitter::handleUser(client, _connection);
 	std::string replyCode;
@@ -69,8 +63,6 @@ std::optional<User> Server::register_session(tcp::socket& sock)
 	    replyCode = ERR_PASSWDMISMATCH;
 	    replyMessage = ":Password incorrect";
 
-	    // set our return value to let caller know that handling was not successful
-	    clientOp = std::nullopt;
 	}
 	else {
 	    // send "<this-IP> 001 <nick> :Welcome to the Internet
@@ -78,32 +70,29 @@ std::optional<User> Server::register_session(tcp::socket& sock)
         replyCode = RPL_WELCOME;
         replyMessage = ":Welcome to the Internet Relay Network";
 
-        // set our return value to let caller know that handling was successful
-        clientOp = std::optional<User>(client);
-
         // also need to register loginInstance for this user
         chitter::insertLogin(client.get_nick(), sock.remote_endpoint(), _connection);
 	}
 
-    std::string rem_IP = sock.remote_endpoint().address().to_string();
-    std::string loc_IP = sock.local_endpoint().address().to_string();
+    const std::string REM_IP = sock.remote_endpoint().address().to_string();
+    const std::string LOC_IP = sock.local_endpoint().address().to_string();
 
-    msg  = loc_IP + " " + replyCode + " " + nick + " " + replyMessage
-           + " " + nick + "!" + user_name
-           + "@" + rem_IP + "\r\n";
+    msg  = LOC_IP + " " + replyCode + " " + nick + " " + replyMessage
+           + " " + nick + "!" + USER_NAME
+           + "@" + REM_IP + "\r\n";
     try_writing(sock, msg);
 
-	return clientOp;
+	return {client, USER_HANDLING_SUCCESSFUL};
 }
 
 std::string Server::get_channel_name(tcp::socket& sock)
 {
-	std::string msg = try_reading(sock);
-	std::string channel = msg.substr(5, std::string::npos);
-	return channel;
+	const std::string MSG = try_reading(sock);
+	const std::string CHANNEL = MSG.substr(5, std::string::npos);
+	return CHANNEL;
 }
 
-void Server::update_comm_structs(User& u, std::deque<std::string>& msgs,
+void Server::update_comm_structs(User& u, MsgList& msgs,
 		tcp::socket& sock)
 {
 	std::lock_guard<std::mutex> lock(_comms_lock);
@@ -115,7 +104,7 @@ void Server::update_comm_structs(User& u, std::deque<std::string>& msgs,
 void Server::inner_scope_run(asio::io_service& io_service,
 		tcp::acceptor& acceptor)
 {
-	tcp::socket sock(io_service);
+	tcp::socket sock (io_service);
 	asio::error_code ec;
 	acceptor.accept(sock, ec);
 	if (ec == asio::error::would_block)
@@ -123,28 +112,39 @@ void Server::inner_scope_run(asio::io_service& io_service,
 	asio::socket_base::keep_alive option(true);
 	sock.set_option(option);
 
-	std::optional<User> clientOpt = register_session(sock);
-	if (!clientOpt) {
+	auto [client, success] = register_session(sock);
+	if (!success) {
 	    // don't handle this user
 	    return;
 	}
-	User client (*clientOpt);
 
-	std::string channel (get_channel_name(sock));
-	client.set_channel(channel);
+	const std::string CHANNEL (get_channel_name(sock));
+	client.set_channel(CHANNEL);
 
 	// move any received messages over, just in case there are any
 	// added reference for clarity
-	auto& client_msgs = _end_msgs[sock.remote_endpoint()];
-	std::deque<std::string> temp_msgs (client_msgs);
+	MsgList& client_msgs = _end_msgs[sock.remote_endpoint()];
+	MsgList temp_msgs (client_msgs);
 	_end_msgs.erase(sock.remote_endpoint());
 
 	update_comm_structs(client, temp_msgs, sock);
 	// don't user sock after this
 
-	_notify_of_newusers.update(channel);
+	_notify_of_newusers.update(CHANNEL);
 
-	if (!_threads.count(channel)) {
+	if (!_threads.count(CHANNEL)) {
+
+		// make sure to log into database
+		// @TODO: for now, only inserting if doesn't already exist. in future,
+		// @TODO: need a more defined mechanism.
+		std::string channelTopic = DEFAULT_TOPIC;
+		const bool CHANNEL_EXISTS = chitter::checkChannelExists(CHANNEL, _SERVER_NAME, _connection);
+		if (CHANNEL_EXISTS) {
+			channelTopic = chitter::getChannelTopic(CHANNEL, _SERVER_NAME, _connection);
+		} else {
+			chitter::insertChannel(CHANNEL, DEFAULT_TOPIC, _SERVER_NAME, _connection);
+		}
+
 	    // spin up a thread to represent the created 'channel'
 	    //@TODO: make it so that topic is not default
 	    //@TODO: make it cleaner, so that less args need to be passed.
@@ -156,43 +156,61 @@ void Server::inner_scope_run(asio::io_service& io_service,
 	    //		_notify_of_newusers.pass_ptr(channel));
 		std::thread thr(thread_run,
 				_SERVER_NAME,
-				channel,
-				DEFAULT_TOPIC,
+				CHANNEL,
+				channelTopic,
 				&_chan_newusers_map,
 				&_socks_deq,
 				&_comms_lock,
-				_notify_of_newusers.pass_ptr(channel));
-		_threads[channel] = std::move(thr);
+				_notify_of_newusers.pass_ptr(CHANNEL));
+		_threads[CHANNEL] = std::move(thr);
 
-		// make sure to log into database
-		chitter::insertChannel(channel, DEFAULT_TOPIC, _SERVER_NAME, _connection);
 	}
 }
 
 void Server::run(int listen_port)
 {
 	try {
+	    // **********************************
+	    // don't sync c and c++ buffers
+	    // also, let user now the program
+	    // is loading up
+		// **********************************
 		std::ios_base::sync_with_stdio(false);
-		std::cout << "Starting server...\n";
-		std::cout << "Type CTRL+C to quit" << std::endl;
+		std::cout << "Starting server...\n"
+		<< "Type CTRL+C to quit" << std::endl;
 
-		//set_globals();
+		// **********************************
+		// need to register globals and signal
+		// handler, for proper multi-threading
+		// **********************************
 		set_globals();
 		std::signal(SIGINT, signal_handler);
 
+		// **********************************
+		// setup accepting (listening) socket
+		// **********************************
 		asio::io_service io_service;
 		tcp::acceptor acceptor(io_service,
 				tcp::endpoint(tcp::v4(), listen_port));
 		acceptor.non_blocking(true);
 
+		// **********************************
 		// create a new server in the database if one does not exist.
 		// regardless, insert a serverMetaData instance
+		// **********************************
 		chitter::handleServer(_SERVER_NAME, acceptor.local_endpoint(), _connection);
 
+		// **********************************
+		// the main loop of the program
+		// **********************************
 		while (!selfdestruct) {
 			inner_scope_run(io_service, acceptor);
 		}
 
+		// **********************************
+		// notify user that program is exiting,
+		// and then clean up threads
+		// **********************************
 		std::cout << "\ngot signal to selfdestruct, going to cleanup _threads\n";
 		for (auto& t : _threads)
 			t.second.join();

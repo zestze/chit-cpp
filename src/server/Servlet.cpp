@@ -8,34 +8,34 @@
 #include <utility>
 #include <ircConstants.h>
 
-std::deque<tcp::socket>::iterator Servlet::get_sock_for_user(User user)
+SocketList::iterator Servlet::get_sock_for_user(User user)
 {
 	return std::find_if(_socks.begin(), _socks.end(),
-			[&user](const auto& sock)
+			[&user](const tcp::socket& sock)
 			{ return user.get_endpt() == sock.remote_endpoint(); });
 }
 
 void Servlet::remove_trace_of(User user)
 {
 	// remove user from users deque
-	tcp::endpoint end = user.get_endpt();
+	const tcp::endpoint END_POINT = user.get_endpt();
 	_users.erase(std::find_if(_users.begin(), _users.end(),
-		[&end] (const auto& u) { return u.get_endpt() == end; }));
+		[&END_POINT] (const auto& u) { return u.get_endpt() == END_POINT; }));
 
 	// get rid of deque associated with socket
-	_end_msgs.erase(end);
+	_end_msgs.erase(END_POINT);
 
 	// get rid of socket
-	//_socks.erase(get_sock_for_user(user));
-	for (auto it = _socks.begin(); it != _socks.end(); ++it) {
+	using Iter = SocketList::iterator;
+	for (Iter it = _socks.begin(); it != _socks.end(); ++it) {
 		asio::error_code ec;
-		tcp::endpoint this_end = it->remote_endpoint(ec);
+		const tcp::endpoint THIS_END = it->remote_endpoint(ec);
 		if (ec) {
 			// error thrown, so socket was closed and this is one
 			// to get rid of.
 			_socks.erase(it);
 			break;
-		} if (this_end == end) {
+		} if (THIS_END == END_POINT) {
 			_socks.erase(it); // calling erase like this should
 			// implicitly close socket
 			break;
@@ -46,19 +46,17 @@ void Servlet::remove_trace_of(User user)
 
 std::string Servlet::try_reading(User user)
 {
-	tcp::endpoint end = user.get_endpt();
+	const tcp::endpoint END_POINT = user.get_endpt();
 	tcp::socket& sock = *get_sock_for_user(user);
-	if (_end_msgs.count(end))
-		_end_msgs[end];
-	std::deque<std::string>& sock_msgs = _end_msgs[end];
+	MsgList& sock_msgs = _end_msgs[END_POINT];
 	return sockio::try_reading_from_sock(sock, sock_msgs);
 }
 
 void Servlet::try_writing(User user, std::string msg)
 {
 	tcp::socket& sock = *get_sock_for_user(user);
-	asio::error_code ec = sockio::try_writing_to_sock(sock, std::move(msg));
-	if (ec) {
+	const asio::error_code EC = sockio::try_writing_to_sock(sock, std::move(msg));
+	if (EC) {
 		// assume broken sock or something... remove user
 		remove_trace_of(user);
 	}
@@ -66,11 +64,9 @@ void Servlet::try_writing(User user, std::string msg)
 
 void Servlet::update_endmsgs()
 {
-	for (auto& sock : _socks) {
-		tcp::endpoint end = sock.remote_endpoint();
-		if (!_end_msgs.count(end))
-			_end_msgs[end];
-		std::deque<std::string>& sock_msgs = _end_msgs[end];
+	for (tcp::socket& sock : _socks) {
+		const tcp::endpoint END_POINT = sock.remote_endpoint();
+		MsgList& sock_msgs = _end_msgs[END_POINT];
 		sockio::update_sockmsgs(sock, sock_msgs);
 	}
 }
@@ -84,25 +80,26 @@ std::deque<User> Servlet::grab_new()
 
 	// get the new user, and their messages read from socket thus far
 	std::lock_guard<std::mutex> lck(gl_lock);
-	std::string chan = _channel_name;
+	const std::string CHANNEL = _channel_name;
 	std::deque<User> newusers;
 
-	for (auto& tup : chan_newusers[chan]) {
+	for (auto& tup : chan_newusers[CHANNEL]) {
 		// copy over user and msgs
-		auto& [newu, temp_msgs] = tup;
+		const auto& [NEW_USER, TEMP_MSGS] = tup;
 
-		_users.push_back(std::move(newu));
-		_end_msgs[newu.get_endpt()]; // initialize
-		for (const std::string& msg : temp_msgs)
-			_end_msgs[newu.get_endpt()].push_back(msg);
+		_users.push_back(NEW_USER);
+		_end_msgs[NEW_USER.get_endpt()]; // initialize
+		for (const std::string& MSG : TEMP_MSGS)
+			_end_msgs[NEW_USER.get_endpt()].push_back(MSG);
 
 		// for later handling of new users
-		newusers.push_back(newu);
+		newusers.push_back(NEW_USER);
 	}
-	chan_newusers[chan].clear();
+	chan_newusers[CHANNEL].clear();
 
 	// grab new sockets
-	for (auto sock_it = global_socks.begin(); sock_it != global_socks.end(); ) {
+	using Iter = SocketList::iterator;
+	for (Iter sock_it = global_socks.begin(); sock_it != global_socks.end(); ) {
 		bool match = std::any_of(_users.begin(), _users.end(),
 				[sock_it] (const auto& user)
 				{ return user.get_endpt() ==
@@ -128,14 +125,14 @@ void Servlet::handle_newusers()
 {
 	std::deque<User> newusers(grab_new());
 	std::deque<User> handled;
-	for (auto& newuser : newusers) {
+	for (const User& NEW_USER: newusers) {
 
-		handled.push_back(newuser);
+		handled.push_back(NEW_USER);
 
-		std::string remIP = newuser.get_endpt().address().to_string();
+		const std::string REM_IP = NEW_USER.get_endpt().address().to_string();
 		std::string msg;
-		msg = newuser.get_nick() + "!" + newuser.get_whoami() + "@" + remIP
-		    + " JOIN " + newuser.get_chan() + "\r\n";
+		msg = NEW_USER.get_nick() + "!" + NEW_USER.get_whoami() + "@" + REM_IP
+		    + " JOIN " + NEW_USER.get_chan() + "\r\n";
 
 		std::string usernames;
 		for (auto& user : _users) {
@@ -145,24 +142,23 @@ void Servlet::handle_newusers()
 
 			usernames += "@" + user.get_nick() + " ";
 		}
-		std::string locIP;
-		tcp::socket& sock = *get_sock_for_user(newuser);
+		tcp::socket& sock = *get_sock_for_user(NEW_USER);
 
-		locIP = sock.local_endpoint().address().to_string();
-		msg = locIP + " " + RPL_TOPIC + " "
-		    + newuser.get_nick() + " " + newuser.get_chan() + " "
+		const std::string LOC_IP = sock.local_endpoint().address().to_string();
+		msg = LOC_IP + " " + RPL_TOPIC + " "
+		    + NEW_USER.get_nick() + " " + NEW_USER.get_chan() + " "
 		    + ":" + _channel_topic + "\r\n";
-		try_writing(newuser, msg);
+		try_writing(NEW_USER, msg);
 
-		msg = locIP + " " + RPL_NAMREPLY + " "
-		    + newuser.get_nick() + " " + newuser.get_chan() + " "
+		msg = LOC_IP + " " + RPL_NAMREPLY + " "
+		    + NEW_USER.get_nick() + " " + NEW_USER.get_chan() + " "
 		    + ":" + usernames + "\r\n";
-		try_writing(newuser, msg);
+		try_writing(NEW_USER, msg);
 
-		msg = locIP + " " + RPL_ENDOFNAMES + " "
-		    + newuser.get_nick() + " " + newuser.get_chan() + " "
+		msg = LOC_IP + " " + RPL_ENDOFNAMES + " "
+		    + NEW_USER.get_nick() + " " + NEW_USER.get_chan() + " "
 		    + ":End of NAMES list\r\n";
-		try_writing(newuser, msg);
+		try_writing(NEW_USER, msg);
 	}
 }
 
@@ -188,10 +184,10 @@ void Servlet::handle_priv(std::string msg, User client)
 	// :<nick>!<user>@<user-ip> PRIVMSG <channel> :<msg>
 
 	const tcp::endpoint end = client.get_endpt();
-	std::string clntIP = end.address().to_string();
+	const std::string CLIENT_IP = end.address().to_string();
 	std::string reply;
 	reply = ":" + client.get_nick() + "!" + client.get_whoami() + "@"
-	      + clntIP + " " + msg + "\r\n";
+	      + CLIENT_IP + " " + msg + "\r\n";
 	for (auto& u : _users) {
 		if (u.get_endpt() == end)
 			continue;
@@ -201,8 +197,8 @@ void Servlet::handle_priv(std::string msg, User client)
 
 	// then, log msg into database.
 	// get substring, so that only the _actual_ message content is sent to database.
-	std::size_t pos = msg.find(":");
-	chitter::insertMsg(_channel_name, client.get_nick(), msg.substr(pos + 1),
+	const std::size_t POS = msg.find(":");
+	chitter::insertMsg(_channel_name, client.get_nick(), msg.substr(POS + 1),
 			_server_name, _connection);
 }
 
@@ -214,10 +210,10 @@ void Servlet::handle_part(std::string msg, User client)
 	// :<nick>!<user>@<user-ip> PART <channel>
 
 	const tcp::endpoint end = client.get_endpt();
-	std::string clntIP = end.address().to_string();
+	const std::string CLIENT_IP = end.address().to_string();
 	std::string reply;
 	reply = ":" + client.get_nick() + "!" + client.get_whoami() + "@"
-	      + clntIP + " " + msg + "\r\n";
+	      + CLIENT_IP + " " + msg + "\r\n";
 	for (auto& u : _users) {
 		if (u.get_endpt() == end)
 			continue;
@@ -237,11 +233,15 @@ void Servlet::handle_topic(std::string msg, User client)
 	// and to the others, will be similar to a PRIVMSG
 
 	std::string split_here = "TOPIC " + _channel_name + " :";
-	std::deque<std::string> parts = sockio::split(std::move(msg), split_here);
+	MsgList parts = sockio::split(std::move(msg), split_here);
 	_channel_topic = *--parts.end();
 
-	const tcp::socket& sock = _socks.front();
-	const std::string locIP = sock.local_endpoint().address().to_string();
+	// need to update topic in database
+	chitter::updateChannelTopic(_channel_name, _channel_topic,
+			_server_name, _connection);
+
+	const tcp::socket& SOCK = _socks.front();
+	//const std::string LOC_IP = SOCK.local_endpoint().address().to_string();
 
 	std::string reply;
 	reply = client.get_nick() + "!" + client.get_whoami() + "@"
@@ -276,21 +276,22 @@ void Servlet::handle_msg(std::string msg, tcp::endpoint end)
 
 void Servlet::handle_endmsgs()
 {
-	for (auto& em : _end_msgs) {
-		tcp::endpoint end = em.first;
-		std::deque<std::string>& msgs = em.second;
+    using MapPair = std::pair<const tcp::endpoint, MsgList>;
+	for (MapPair& em : _end_msgs) {
+		const tcp::endpoint& END_POINT = em.first;
+		MsgList& msgList = em.second;
 
-		for (auto& msg : msgs)
-			handle_msg(msg, end);
+		for (const std::string& MSG: msgList)
+			handle_msg(MSG, END_POINT);
 
-		if (_end_msgs.count(end) && !msgs.empty())
-			msgs.clear(); // because reference should clear the actual
+		if (_end_msgs.count(END_POINT) && !msgList.empty())
+			msgList.clear(); // because reference should clear the actual
 	}
 }
 
 void thread_run(const std::string server, const std::string channel, const std::string topic,
 		Chan_newusers_ptr chan_newusers_ptr,
-	 std::deque<tcp::socket> *global_socks_ptr, std::mutex *gl_lock_ptr,
+	 SocketList *global_socks_ptr, std::mutex *gl_lock_ptr,
 	 std::shared_ptr<std::atomic<bool>> notify)
 {
 	try {

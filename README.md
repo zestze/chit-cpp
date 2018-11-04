@@ -1,15 +1,8 @@
 # Chit Client and Server
 
-## current status
-- making changes to project structure, make shared headers available to client and server
-- make a test subdirectory in each folder
-- make shared into a library
-- make sure CMake works
-- make note that files that represent a class are capital, and others are lowercase
-
 ## Summary
 
-Chit is a simple chat service, written in C++11 that is based on a super simplified version of IRC.
+Chit is a simple chat service, written in Modern C++ that is based on a super simplified version of IRC.
 As of now, it creates chat rooms on demand, and allows for indeterminate amount of users. The chat
 options are simple, users can enter chat rooms (which will be created if one doesn't exist already),
 broadcast messages across the chat room, and exit the chat room.
@@ -21,61 +14,53 @@ being lightweight.
 Users can choose names to display in the chat, and should perceive minimal delay when joining
 channels.
 
-As of now, no state is maintained across sessions, but this is a feature that is in development
-through the use of a SQL server.
+State is maintained across sessions through the use of a PostgreSQL server.
 
-This application is written from the ground-up, only borrowing Boost's ASIO socket library, which
-will be replaced in time.
+This application is written from the ground-up, only borrowing the ASIO socket library, and
+the libpq/libpqxx libraries for interfacing with PostgreSQL.
 
 ## Requirements
 
-- g++ compiler capable of running atleast C++11
-- make for Makefiles
-- c++ asio stand-alone library
-	- on ubuntu this is `libasio-dev`
+- c++ compiler capable of c++17
+    - development done with clang++-6.0
+- make
+    - development done with make-4.1
+- cmake
+    - development done with cmake-3.10
+- libpq and libpqxx
+    - c and c++ libraries, respectively, for working with PostgreSQL
+- gtest and gmock
+    - c++ testing suite
+- asio
+    - c++ socket library
 
 ## Usage
-
-First, start up a server by running `./server-test.sh` in the `test/` directory. This will by
-default start a server to listen on port 8081.
-
-Following this, users can join by running one of the other two client scripts in the `test/`
-directory. One connects to a Digital Oceans server, and the other is meant for local connections.
-The programs can be run with any IP address, but these scripts weren't made with that kind of
-use in mind (yet).
-
-Following this, on the client-side the program instructs the user how to connect and queries
-them for relevant information, like nicknames, realnames, etc. and describes the various
-commands. To quit the client-side please follow the instructions and type `EXIT`. To quit
-the server side, similarly follow the output and type `CTRL+C`
 
 Here are instructions for doing a local session
 ```bash
 # server side, starting at project-root
-cd test/
-./server-test.sh
+cd test/scripts/    # move to the scripts directory
+./install.sh        # basically 'install' / 'build' the project's binaries
+./server-test.sh    # the actual script to run to execute the server binary
 ```
 
 ```bash
 # client side, starting at project-root
-cd test/
-./client-local-test.sh
+cd test/scripts/          # move to the scripts directory
+./install.sh              # don't run if you already to ran to build the server
+./client-local-test.sh    # the actual script to run to execute the client binary
 ```
 
 If the hardcoded digital oceans server is running, then a client can sign on like so
 ```bash
-cd test/
+cd test/scripts/
+./install.sh
 ./client-digocean-test.sh
 ```
 
 ## Features to Implement
 
-- [ ] move consts_globs etc header extern definitions into it's own definition. Globals like that
-	are a bad idea
-- [ ] move atomic killself to private variable of server
-- [ ] Check server.h and sockio.cpp for curr changes to implement
 - [ ] "Modes" for users that limit actions
-- [ ] Maintain state: user profiles, chat history log, etc.
 - [ ] Implement time-out mechanism on read, to account for broken connections
 - [ ] Handle broken pipe exceptions, and implement a prioritize PART messages
 - [ ] On client side, use different colors for different users?

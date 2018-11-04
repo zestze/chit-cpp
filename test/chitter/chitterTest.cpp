@@ -3,7 +3,7 @@
 //
 
 #include <gtest/gtest.h>
-#include <chitter.h>
+#include <chitter/chitter.h>
 
 using namespace chitter;
 using namespace std;

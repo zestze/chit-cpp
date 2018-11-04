@@ -23,7 +23,7 @@
 #include <pwd.h>
 #include <cstdio>
 #include <climits>
-#include <chitter.h>
+#include <chitter/chitter.h>
 // for grabbing username
 
 //using boost::asio::ip::tcp;
