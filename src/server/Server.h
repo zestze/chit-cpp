@@ -102,7 +102,7 @@ class Server {
 		std::map<std::string, std::thread> _threads;
 
 		// for db querying
-		pqxx::connection _connection = chitter::initiate("../shared/config");
+		pqxx::connection _connection = chitter::initiate();
 
 		const std::string _SERVER_NAME;
 };

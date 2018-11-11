@@ -5,11 +5,16 @@
 #include "utils.h"
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 
 namespace chitter {
 
     DbConfig loadConfig(const std::string fileName) {
         std::ifstream infile (fileName, std::ifstream::in);
+        if (!infile.is_open()) {
+            throw std::runtime_error("config file doesn't exist");
+        }
+
         std::string line;
         //@TODO: properly map first line to second
         std::getline (infile, line);

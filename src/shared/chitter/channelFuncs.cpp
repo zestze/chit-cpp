@@ -70,6 +70,7 @@ namespace chitter {
     }
 
     //@TODO: displace to serverFuncs
+    //@TODO: delete this, replaced by serverRoles
     void insertConnection(const std::string channelID, const User &user, const Status status,
                                    const std::string serverName, pqxx::connection &connection) {
         pqxx::work work(connection);
