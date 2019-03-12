@@ -9,6 +9,10 @@ using namespace chitter;
 using namespace std;
 
 //@TODO: make test cases for other functions
+//@TODO: split into multiple test files, and also create a phony test db with hardcoded vals, so not
+//@TODO: making edits in 'prod' database
+
+//@TODO: could also mock the entire thing...
 TEST(chitterTest, testUserExists) {
     EXPECT_TRUE(checkUserExists("zest"));
     EXPECT_FALSE(checkUserExists("zest12342452345"));
@@ -18,32 +22,27 @@ TEST(chitterTest, testVerifyPassword) {
     EXPECT_TRUE(verifyPassword("zest", ""));
     EXPECT_FALSE(verifyPassword("zest", "asdf"));
     EXPECT_TRUE(verifyPassword("testPass", "testPass"));
+    //@TODO: add more edge cases
 }
 
 TEST(chitterTest, testGrabBio) {
     EXPECT_EQ(getBio("blah"), "wwhatup");
+    //@TODO: add more edge cases
 }
 
 TEST(chitterTest, testGetStatus) {
-    //tcp::endpoint end (asio::ip::address_v4::from_string("127.0.0.1"),
-    //                   3372);
-    //insertLogin("testPass", end);
-
-    //cout << getStatusString(Status::Admin) << endl;
-
-    auto[statusEnum, displayName] = getServerRoles("khalid", "server3003");
+    auto[statusEnum, displayName] = getServerRoles("jack", "testServer");
     EXPECT_TRUE(statusEnum == Status::Admin);
-    EXPECT_EQ(displayName, "khalid");
-
-    EXPECT_TRUE(getChannelRoles("zest", "123", "blah") == Status::Nonexistent);
-    EXPECT_TRUE(getChannelRoles("blah", "#fudge", "server2646") == Status::Admin);
+    EXPECT_EQ(displayName, "nicholson");
 }
 
 TEST(chitterTest, testGetFriends) {
+    /*
     vector<string> expectedFriends = {"testPass"};
     vector<string> actualFriends = fetchFriends("test1");
     for (int i = 0; i < expectedFriends.size(); i++)
         EXPECT_EQ(expectedFriends[i], actualFriends[i]);
+        */
 
 }
 

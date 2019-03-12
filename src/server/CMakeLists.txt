@@ -8,9 +8,7 @@ add_executable(server
         Servlet.cpp
         Servlet.h)
 
-target_link_libraries(server Threads::Threads sockio)
-
-target_link_libraries(server chitter)
+target_link_libraries(server Threads::Threads sockio chitter)
 
 file(COPY ${CMAKE_CURRENT_BINARY_DIR}/../shared/chitter/config
         DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

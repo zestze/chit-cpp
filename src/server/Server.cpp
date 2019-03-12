@@ -214,6 +214,19 @@ void Server::run(int listen_port)
 		std::cout << "\ngot signal to selfdestruct, going to cleanup _threads\n";
 		for (auto& t : _threads)
 			t.second.join();
+
+		//@TODO: figure out destruction stuff better
+		//@TODO: not sure if necessary...
+		if (acceptor.is_open()) {
+			acceptor.close();
+		}
+		io_service.stop();
+		_connection.disconnect();
+		for (auto& entry : _socks_deq) {
+			if (entry.is_open()) {
+				entry.close();
+			}
+		}
 	}
 	catch (const std::exception& e)
 	{

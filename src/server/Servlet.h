@@ -183,7 +183,7 @@ class Servlet {
 		const std::string _server_name;
 
 		// for querying db
-		pqxx::connection _connection = chitter::initiate("../shared/config");
+		pqxx::connection _connection = chitter::initiate();
 };
 
 /*

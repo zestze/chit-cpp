@@ -89,8 +89,8 @@ class Server {
 		std::map<tcp::endpoint, MsgList> _end_msgs;
 
 		// these are for passing info to threads
-		std::map<std::string, std::deque<std::tuple<User, std::deque<
-			std::string>>>> _chan_newusers_map;
+		std::map<std::string, std::deque<std::tuple<User,
+		    MsgList>>> _chan_newusers_map;
 
 		SocketList _socks_deq;
 

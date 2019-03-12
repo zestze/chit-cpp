@@ -10,6 +10,11 @@
 
 namespace chitter {
 
+    ///
+    /// \brief
+    /// \param userID
+    /// \param connection
+    /// \return
     bool checkUserExists(const std::string userID, pqxx::connection& connection);
 
     bool verifyPassword(const std::string userID, const std::string password,
