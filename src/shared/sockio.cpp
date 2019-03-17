@@ -51,7 +51,7 @@ std::string sockio::try_reading_from_sock(tcp::socket& sock,
 		std::deque<std::string>& sock_msgs)
 {
 	if (!sock_msgs.empty()) {
-		std::string msg = sock_msgs.front();
+		const std::string msg = sock_msgs.front();
 		sock_msgs.pop_front();
 		return msg;
 	}
@@ -71,7 +71,7 @@ std::string sockio::try_reading_from_sock(tcp::socket& sock,
 	    	sock_msgs.push_back(msg);
 	}
 
-	std::string msg = sock_msgs.front();
+	const std::string msg = sock_msgs.front();
 	sock_msgs.pop_front();
 	return msg;
 }
@@ -79,7 +79,7 @@ std::string sockio::try_reading_from_sock(tcp::socket& sock,
 void sockio::update_sockmsgs(tcp::socket& sock,
 		std::deque<std::string>& sock_msgs)
 {
-	std::size_t len = sock.available();
+	const std::size_t len = sock.available();
 	if (len <= 0) { // could just put == 0 ...
 		return;
 	}

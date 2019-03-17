@@ -17,6 +17,8 @@
 bool DEBUG = false;
 //bool DEBUG = true;
 
+using namespace std::string_literals;
+
 std::string Client::try_reading()
 {
 	return sockio::try_reading_from_sock(*_sockptr, _sock_msgs);
@@ -35,7 +37,7 @@ void Client::update()
 void Client::query_and_create()
 {
     // get nick
-	std::string msg = std::string("\n")
+	std::string msg = "\n"s
 	    + "##########################\n"
 	    + "Going to ask for user info...\n"
 	    + "Note: these are reserved characters that cannot be used:\n"
@@ -121,7 +123,7 @@ std::string Client::parse_user_list_msg(std::string msg)
 std::string Client::connect_to_channel()
 {
 	std::string msg;
-	msg = std::string("\n")
+	msg = "\n"s
 	    + "##########################\n"
 	    + "What #channel would you like to join?\n";
 	std::cout << to_blue(msg);
@@ -142,7 +144,7 @@ std::string Client::connect_to_channel()
 		std::cout << reply << "\n";
 	}
 
-	msg = std::string("\n")
+	msg = "\n"s
 	    + "##########################\n"
 	    + "Successfully connected to " + channel + "\n";
 	std::cout << to_blue(msg);
@@ -154,7 +156,7 @@ std::string Client::connect_to_channel()
 
 	_channel_topic = parse_topic_msg(reply);
 
-	msg = std::string("\n")
+	msg = "\n"s
 	    + "##########################\n"
 	    + channel + " Topic:\n"
 	    + _channel_topic + "\n";
@@ -165,7 +167,7 @@ std::string Client::connect_to_channel()
 	if (DEBUG)
 		std::cout << reply << "\n";
 
-	msg = std::string("\n")
+	msg = "\n"s
 	    + "##########################\n"
 	    + channel + " Users:\n"
 	    + parse_user_list_msg(reply) + "\n";
@@ -243,8 +245,7 @@ void Client::parse_session_msg(std::string msg)
 
 void Client::handle_topic_request()
 {
-	std::string to_client;
-	to_client = std::string("\n")
+    std::string to_client = "\n"s
 		  + "##########################\n"
 	          + "Do you want to SHOW or SET the topic?\n"
 	          + "Type SHOW or SET for the respective option\n";
@@ -254,13 +255,13 @@ void Client::handle_topic_request()
 	getline(std::cin, resp);
 
 	if (resp == "SHOW") {
-		to_client = std::string("\n")
+		to_client = "\n"s
 			  + "##########################\n"
 			  + _user.get_chan() + " Topic:\n"
 			  + _channel_topic + "\n\n";
 		std::cout << to_blue(to_client);
 	} else if (resp == "SET") {
-		to_client = std::string("\n")
+		to_client = "\n"s
 			  + "##########################\n"
 			  + "Please type in the channel's new topic:\n";
 		std::cout << to_blue(to_client);
@@ -287,8 +288,7 @@ client_code Client::parse_user_input(std::string msg)
 		try_writing(part_msg);
 		return quitting;
 	} else if (msg == "HELP") {
-		std::string to_client;
-		to_client = std::string("\n")
+        std::string to_client = "\n"s
 			  + "##########################\n"
 			  + "options...\n"
 			  + "TOPIC: SET or SHOW the current chat topic\n"
@@ -347,8 +347,7 @@ void Client::run(std::string serv_ip, std::string port)
 		_channel_name = connect_to_channel();
 		_user.set_channel(_channel_name);
 
-		std::string userIO;
-		userIO = std::string("\n")
+        std::string userIO = "\n"s
 		    + "##########################\n"
 		    + "Type and press <ENTER> to send a message\n"
 		    + "Type EXIT and press <ENTER> to exit the client\n"

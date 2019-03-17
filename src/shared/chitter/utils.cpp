@@ -6,26 +6,66 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <pugixml.hpp>
+#include <range/v3/all.hpp>
 
 namespace chitter {
 
     DbConfig loadConfig(const std::string fileName) {
-        std::ifstream infile (fileName, std::ifstream::in);
-        if (!infile.is_open()) {
-            throw std::runtime_error("config file doesn't exist");
+        using namespace pugi;
+
+        xml_document doc;
+        xml_parse_result result = doc.load_file(fileName.c_str());
+        if (result.status != xml_parse_status::status_ok) {
+            throw std::runtime_error("error loading config file: " + fileName);
         }
 
-        std::string line;
-        //@TODO: properly map first line to second
-        std::getline (infile, line);
-        std::getline (infile, line);
-        // second line is what holds actual info
-        std::replace(line.begin(), line.end(), ',', ' ');
-        std::stringstream ss (line);
-        DbConfig db;
-        ss >> db.type >> db.username >> db.password
-           >> db.ip   >> db.port     >> db.name;
-        return db;
+        xml_node root = doc.first_child(); // should be 'config'
+
+        // remove whitespace from each value string if it matches what we're looking for
+        auto isSpace = [] (unsigned char c) { return std::isspace(c); };
+        auto toString = [=] (const xml_node& node) {
+            using namespace ranges;
+            return std::string(node.child_value()) | action::remove_if(isSpace);
+        };
+
+        // naive xml tree parse
+        unsigned int count = 0;
+        DbConfig dbConfig;
+        using namespace std::string_literals;
+        for (xml_node node : root.children()) {
+            if (node.name() == "databaseType"s) {
+
+                dbConfig.type = toString(node);
+                count++;
+            } else if (node.name() == "username"s) {
+
+                dbConfig.username = toString(node);
+                count++;
+            } else if (node.name() == "password"s) {
+
+                dbConfig.password = toString(node);
+                count++;
+            } else if (node.name() == "ip"s) {
+
+                dbConfig.ip = toString(node);
+                count++;
+            } else if (node.name() == "port"s) {
+
+                dbConfig.port = toString(node);
+                count++;
+            } else if (node.name() == "databaseName"s) {
+
+                dbConfig.name = toString(node);
+                count++;
+            }
+        }
+
+        if (count < 6) {
+            throw std::runtime_error("not all fields in xml file");
+        }
+
+        return dbConfig;
     }
 
     pqxx::connection initiate(const std::string fileName) {

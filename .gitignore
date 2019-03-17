@@ -2,3 +2,5 @@
 *.o
 *.a
 *config*
+.conan
+chit-build

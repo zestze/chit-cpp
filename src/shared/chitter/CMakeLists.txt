@@ -13,7 +13,7 @@ target_include_directories(chitter
 
 target_compile_features(chitter PUBLIC cxx_std_17)
 
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/config
+file(COPY ${CONFIG_FILES}
         DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_libraries(chitter ${CONAN_LIBS})

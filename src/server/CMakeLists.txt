@@ -10,5 +10,5 @@ add_executable(server
 
 target_link_libraries(server Threads::Threads sockio chitter)
 
-file(COPY ${CMAKE_CURRENT_BINARY_DIR}/../shared/chitter/config
+file(COPY ${CONFIG_FILES}
         DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

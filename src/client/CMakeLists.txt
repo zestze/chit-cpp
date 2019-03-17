@@ -5,4 +5,4 @@ add_executable(client
 
 target_link_libraries(client sockio)
 target_link_libraries(client chitter)
-target_link_libraries(client Threads::Threads) #@TODO: why does client need threads?
+target_link_libraries(client Threads::Threads)

@@ -33,13 +33,13 @@ namespace chitter {
     /// \brief for loading a config file into a local variable
     /// \param fileName the name of the config file
     /// \return the relevant config info stored in a struct
-    DbConfig loadConfig(const std::string fileName = "./config");
+    DbConfig loadConfig(const std::string fileName = "config.xml");
 
     ///
     /// \brief for initiating a connection to a psql server
     /// \param fileName the name of the config file
     /// \return a connection variable to use for communicating with database
-    pqxx::connection initiate(const std::string fileName = "./config");
+    pqxx::connection initiate(const std::string fileName = "config.xml");
 
     ///
     /// \brief for initiating a connection to a psql server
