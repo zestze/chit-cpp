@@ -49,7 +49,17 @@ class Server {
         // *******************
         // *******************
         Server(const std::string serverName)
-        :_SERVER_NAME{serverName}{ }
+        :_SERVER_NAME{serverName},
+        _connection(chitter::initiate()) { }
+
+        // *******************
+        // *******************
+        ~Server() {
+            for (auto& t : _threads) 
+                t.second.join(); 
+            // pqxx and asio members clean up their
+            // own resources
+        }
 
         // *******************
         // *******************
@@ -102,7 +112,7 @@ class Server {
 		std::map<std::string, std::thread> _threads;
 
 		// for db querying
-		pqxx::connection _connection = chitter::initiate();
+		pqxx::connection _connection;
 
 		const std::string _SERVER_NAME;
 };

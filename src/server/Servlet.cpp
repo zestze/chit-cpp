@@ -284,8 +284,9 @@ void Servlet::handle_endmsgs()
 		for (const std::string& MSG: msgList)
 			handle_msg(MSG, END_POINT);
 
-		if (_end_msgs.count(END_POINT) && !msgList.empty())
+		if (_end_msgs.count(END_POINT) && !msgList.empty()) {
 			msgList.clear(); // because reference should clear the actual
+        }
 	}
 }
 

@@ -8,14 +8,12 @@
 
 void Notifier::update(std::string channel)
 {
-	if (_map.count(channel)) {
-		auto& atom_ptr = _map[channel];
-		*atom_ptr = true;
-	} else {
-		_map[channel] = std::make_shared<std::atomic<bool>>();
-		auto& atom_ptr = _map[channel];
-		*atom_ptr = true;
-	}
+    if (auto iter = _map.find(channel); iter != _map.end()) {
+        iter->second->store(true);
+    } else {
+        auto atom_ptr = std::make_shared<std::atomic<bool>>(true);
+        _map[channel] = atom_ptr;
+    }
 }
 
 std::shared_ptr<std::atomic<bool>> Notifier::pass_ptr(std::string channel)
