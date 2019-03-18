@@ -10,6 +10,7 @@
 #include "Server.h"
 #include <utility>
 #include <ircConstants.h>
+#include <openssl/sha.h>
 
 // ************ GLOBALS ****************
 std::atomic<bool> selfdestruct;
@@ -33,6 +34,28 @@ void Server::try_writing(tcp::socket& sock, std::string msg)
 	sockio::try_writing_to_sock(sock, std::move(msg));
 }
 
+std::tuple<bool, std::string> Server::hashPassword(std::string password)
+{
+    SHA256_CTX context;
+    std::basic_string<unsigned char> md (SHA256_DIGEST_LENGTH, '0');
+    const bool success = SHA256_Init(&context) && 
+        SHA256_Update(&context, password.data(), password.length()) &&
+        SHA256_Final(md.data(), &context);
+
+    // this will cause issues across different architectures / implementations
+    // since the diff between unsigned char and char can vary
+    auto convertChar = [] (unsigned char c) -> char {
+        if (c > std::numeric_limits<char>::max()) {
+            throw std::runtime_error("during password hashing, encountered size issue");
+        }
+        return c;
+    };
+    std::string hash (SHA256_DIGEST_LENGTH, '0');
+    std::transform(md.begin(), md.end(), hash.begin(), convertChar);
+
+    return {success, hash};
+}
+
 Server::UserSuccessPair Server::register_session(tcp::socket& sock)
 {
 	std::string msg = try_reading(sock);
@@ -46,13 +69,16 @@ Server::UserSuccessPair Server::register_session(tcp::socket& sock)
 	msg = try_reading(sock);
 	// "PASS <password>"
 	std::string password = msg.substr(5, std::string::npos);
+    // hash the password
+    auto [success, hash] = hashPassword(password);
 
 	const std::string PART1 = parts.front();
 	const std::string PART2 = parts.back();
 	const std::string USER_NAME = PART1.substr(5, std::string::npos);
 	const std::string REAL_NAME = PART2;
 
-	User client(nick, USER_NAME, REAL_NAME, password);
+    //@TODO: need to reset passwords in the database...
+	User client(nick, USER_NAME, REAL_NAME, hash);
 	client.set_endpoint(sock.remote_endpoint());
 
 	const bool USER_HANDLING_SUCCESSFUL = chitter::handleUser(client, _connection);

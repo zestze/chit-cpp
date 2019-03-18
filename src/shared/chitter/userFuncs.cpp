@@ -20,7 +20,6 @@ namespace chitter {
 
     bool verifyPassword(const std::string userID, const std::string password,
                         pqxx::connection& connection) {
-        // @TODO: include proper password checking mechanism.
         // @TODO: can also simplify to not scan, since only row should be returned.
         pqxx::work work(connection);
         std::stringstream ss;
@@ -28,8 +27,7 @@ namespace chitter {
         const pqxx::result RESULT = work.exec(ss.str());
         work.commit();
         const std::string PASSWORD_RESULT = RESULT[0][0].as<std::string>();
-        bool PASSWORD_MATCHES = (PASSWORD_RESULT == password); //@TODO: modify this to do proper password
-        return PASSWORD_MATCHES;
+        return (PASSWORD_RESULT == password);
     }
 
     void updatePassword(const std::string userID, const std::string newPassword,

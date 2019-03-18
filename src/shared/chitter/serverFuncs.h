@@ -8,13 +8,11 @@
 #include <pqxx/pqxx>
 #include <asio.hpp>
 #include <string>
-#include <experimental/optional>
+#include <optional>
 #include <status.h>
 
 namespace chitter {
     using tcp = asio::ip::tcp;
-    //@TODO: figure out a way around using an optional
-    using StringOpt = std::experimental::optional<std::string>;
 
     bool checkServerExists(const std::string serverName, pqxx::connection& connection);
 
@@ -26,11 +24,12 @@ namespace chitter {
     void handleServer(const std::string serverName, const tcp::endpoint& endpoint,
                       pqxx::connection& connection);
 
-    std::tuple<Status, std::string> getServerRoles(const std::string userId, const std::string serverName,
-                                                   pqxx::connection& connection);
+    std::tuple<Status, std::string> getServerRoles(const std::string userId, 
+            const std::string serverName, pqxx::connection& connection);
 
-    void insertServerRoles(const std::string userID, const std::string serverName, const Status statusEnum,
-                           StringOpt displayName, pqxx::connection& connection);
+    void insertServerRoles(const std::string userID, const std::string serverName, 
+            const Status statusEnum, std::optional<std::string> displayName, 
+            pqxx::connection& connection);
 
 }
 

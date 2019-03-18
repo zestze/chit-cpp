@@ -53,7 +53,8 @@ namespace chitter {
         insertServerMetadata(serverName, endpoint, connection);
     }
 
-    std::tuple<Status, std::string> getServerRoles(const std::string userID, const std::string serverName, pqxx::connection &connection) {
+    std::tuple<Status, std::string> getServerRoles(const std::string userID, 
+            const std::string serverName, pqxx::connection &connection) {
         pqxx::work work(connection);
         std::stringstream ss;
         ss << "SELECT permissions, displayName FROM ServerRoles"
@@ -61,12 +62,14 @@ namespace chitter {
            work.quote(serverName);
         const pqxx::result RESULT = work.exec(ss.str());
         work.commit();
-        return std::tuple<Status, std::string>{ getStatusEnum(RESULT[0][0].as<std::string>()),
-                                                RESULT[0][1].as<std::string>()};
+
+        return {getStatusEnum(RESULT[0][0].as<std::string>()),
+            RESULT[0][1].as<std::string>()};
     }
 
     void insertServerRoles(const std::string userID, const std::string serverName,
-                                    const Status statusEnum, StringOpt displayName,
+                                    const Status statusEnum, 
+                                    std::optional<std::string> displayName,
                                     pqxx::connection &connection) {
         pqxx::work work(connection);
         if (!displayName) {

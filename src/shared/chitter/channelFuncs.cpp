@@ -69,21 +69,6 @@ namespace chitter {
         work.commit();
     }
 
-    //@TODO: displace to serverFuncs
-    //@TODO: delete this, replaced by serverRoles
-    void insertConnection(const std::string channelID, const User &user, const Status status,
-                                   const std::string serverName, pqxx::connection &connection) {
-        pqxx::work work(connection);
-        std::stringstream ss;
-        ss << "INSERT INTO Connections (userName, serverName, connStatus, displayName)"
-              " VALUES ";
-        std::stringstream workAround;
-        workAround << status;
-        passValues(ss, work, {user.get_nick(), serverName, workAround.str(), user.get_nick()});
-        const pqxx::result RESULT = work.exec(ss.str());
-        work.commit();
-    }
-
     Status getChannelRoles(const std::string userID, const std::string channelName,
                                     const std::string serverName, pqxx::connection &connection) {
         pqxx::work work(connection);

@@ -109,7 +109,8 @@ namespace chitter {
     }
 
     inline void insertServerRoles(const std::string userID, const std::string serverName,
-                           const Status statusEnum, StringOpt displayName) {
+                           const Status statusEnum, 
+                           std::optional<std::string> displayName) {
         pqxx::connection connection = initiate();
         insertServerRoles(userID, serverName, statusEnum, displayName, connection);
     }
@@ -142,12 +143,6 @@ namespace chitter {
                    const std::string serverName) {
         pqxx::connection connection = initiate();
         return insertMsg(channelName, userID, msg, serverName, connection);
-    }
-
-    inline void insertConnection(const std::string channelID, const User &user, const Status status,
-                          const std::string serverName) {
-        pqxx::connection connection = initiate();
-        return insertConnection(channelID, user, status, serverName, connection);
     }
 
     inline Status getChannelRoles(const std::string userID, const std::string channelName,

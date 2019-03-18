@@ -25,10 +25,6 @@ namespace chitter {
     void insertMsg(const std::string channelName, const std::string userID, const std::string msg,
                    const std::string serverName, pqxx::connection& connection);
 
-    //@TODO: displace to serverFuncs and remove channelID arg
-    void insertConnection(const std::string channelID, const User& user, const Status status,
-                          const std::string serverName, pqxx::connection& connection);
-
     Status getChannelRoles(const std::string userID, const std::string channelName, const std::string serverName,
                            pqxx::connection& connection);
 

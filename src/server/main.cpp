@@ -16,8 +16,10 @@ int main(int argc, char **argv)
 	}
 	int port = std::stoi(argv[1]);
 
+    //@TODO: update config.xml to have default names and such
 	//@TODO: make it so that args can be passed for servername
 	Server serv(DEFAULT_SERVER);
 	serv.run(port);
+
 	return 0;
 }

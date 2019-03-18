@@ -73,6 +73,10 @@ class Server {
 		 */
 		void try_writing(tcp::socket& sock, std::string msg);
 
+        /*
+         */
+        std::tuple<bool, std::string> hashPassword(std::string password);
+
 		/*
 		 */
 		UserSuccessPair register_session(tcp::socket& sock);
