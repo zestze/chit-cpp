@@ -6,8 +6,6 @@
 #include "Server.h"
 #include <iostream>
 
-#define DEFAULT_SERVER "testServer"
-
 int main(int argc, char **argv)
 {
 	if (argc != 2) {
@@ -16,9 +14,7 @@ int main(int argc, char **argv)
 	}
 	int port = std::stoi(argv[1]);
 
-    //@TODO: update config.xml to have default names and such
-	//@TODO: make it so that args can be passed for servername
-	Server serv(DEFAULT_SERVER);
+	Server serv;
 	serv.run(port);
 
 	return 0;

@@ -12,8 +12,9 @@
 #include "globals.h"
 #include "Servlet.h"
 #include <User.h>
-#include <sockio.h>
+#include <sockio/sockio.h>
 #include "Notifier.h"
+#include <configUtils/configUtils.h>
 
 #include <iostream>
 #include <string>
@@ -28,9 +29,6 @@
 #include <chitter/chitter.h>
 #include <pqxx/pqxx>
 
-// some macros for configurable values
-#define DEFAULT_TOPIC "DEFAULT_TOPIC"
-
 using tcp = asio::ip::tcp;
 
 class Server {
@@ -42,15 +40,13 @@ class Server {
 	public:
 
 
+    //@TODO: store reference to ServerConfig instead of topic and name
         // *******************
         // *******************
-        Server() = delete;
-
-        // *******************
-        // *******************
-        Server(const std::string serverName)
-        :_SERVER_NAME{serverName},
-        _connection(chitter::initiate()) { }
+        Server() :
+        _serverConfig(configUtils::loadServerConfig()),
+        _connection(chitter::initiate()) {
+        }
 
         // *******************
         // *******************
@@ -118,7 +114,7 @@ class Server {
 		// for db querying
 		pqxx::connection _connection;
 
-		const std::string _SERVER_NAME;
+		const configUtils::ServerConfig _serverConfig;
 };
 
 #endif

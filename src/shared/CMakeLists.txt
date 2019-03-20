@@ -1,11 +1,5 @@
-add_library(sockio
-        sockio.cpp)
+add_subdirectory(sockio)
 
-#-------------------------------
-# let's any target that links against this library have access to these PUBLIC headers
-#-------------------------------
-target_include_directories(sockio
-        PUBLIC
-        "${PROJECT_SOURCE_DIR}/src/shared")
+add_subdirectory(configUtils)
 
 add_subdirectory(chitter)

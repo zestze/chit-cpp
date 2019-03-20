@@ -3,7 +3,7 @@
 //
 
 #include <gtest/gtest.h>
-#include <sockio.h>
+#include <sockio/sockio.h>
 
 using namespace sockio;
 using namespace std;

@@ -26,7 +26,7 @@
 
 #include <User.h>
 #include "globals.h"
-#include <sockio.h>
+#include <sockio/sockio.h>
 
 #include <string>
 #include <iostream>

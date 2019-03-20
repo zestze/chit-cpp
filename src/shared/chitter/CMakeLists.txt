@@ -17,3 +17,4 @@ file(COPY ${CONFIG_FILES}
         DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_libraries(chitter ${CONAN_LIBS})
+target_link_libraries(chitter configUtils)

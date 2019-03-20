@@ -9,31 +9,9 @@
 #include <pqxx/connection>
 #include <pqxx/pqxx>
 
+#include "configUtils/configUtils.h"
+
 namespace chitter {
-
-    ///
-    /// \struct DbConfig
-    /// \brief used to store all the config info for connecting to a db
-    struct DbConfig {
-        /// \brief the type of database (postgres, etc)
-        std::string type;
-        /// \brief the username of the user to sign in as
-        std::string username;
-        /// \brief the password of the user to sign in as
-        std::string password;
-        /// \brief the ip to use to setup the connection
-        std::string ip;
-        /// \brief the port to connect on
-        std::string port;
-        /// \brief the name of the database on the server
-        std::string name;
-    };
-
-    ///
-    /// \brief for loading a config file into a local variable
-    /// \param fileName the name of the config file
-    /// \return the relevant config info stored in a struct
-    DbConfig loadConfig(const std::string fileName = "config.xml");
 
     ///
     /// \brief for initiating a connection to a psql server
@@ -45,7 +23,7 @@ namespace chitter {
     /// \brief for initiating a connection to a psql server
     /// \param dbConfig the config file info in struct form
     /// \return a connection variable to use for communicating with database
-    pqxx::connection initiate(const DbConfig dbConfig);
+    pqxx::connection initiate(const configUtils::DbConfig dbConfig);
 
     ///
     /// \brief queries the database for the current datetime

@@ -163,25 +163,26 @@ void Server::inner_scope_run(asio::io_service& io_service,
 		// make sure to log into database
 		// @TODO: for now, only inserting if doesn't already exist. in future,
 		// @TODO: need a more defined mechanism.
-		std::string channelTopic = DEFAULT_TOPIC;
-		const bool CHANNEL_EXISTS = chitter::checkChannelExists(CHANNEL, _SERVER_NAME, _connection);
+		std::string channelTopic = _serverConfig.defaultTopic;
+		const std::string serverName = _serverConfig.defaultName;
+		const bool CHANNEL_EXISTS = chitter::checkChannelExists(CHANNEL, serverName, _connection);
 		if (CHANNEL_EXISTS) {
-			channelTopic = chitter::getChannelTopic(CHANNEL, _SERVER_NAME, _connection);
+			channelTopic = chitter::getChannelTopic(CHANNEL, serverName, _connection);
 		} else {
-			chitter::insertChannel(CHANNEL, DEFAULT_TOPIC, _SERVER_NAME, _connection);
+			chitter::insertChannel(CHANNEL, channelTopic, serverName, _connection);
 		}
 
 	    // spin up a thread to represent the created 'channel'
 	    //@TODO: make it so that topic is not default
 	    //@TODO: make it cleaner, so that less args need to be passed.
-	    //auto strings = std::make_tuple(_SERVER_NAME, channel, DEFAULT_TOPIC);
+	    //auto strings = std::make_tuple(serverName, channel, channelTopic);
 	    //auto pointers = std::make_tuple(&_chan_newusers_map, &_socks_deq, &_comms_lock);
 	    //std::thread thr(thread_run,
 	    //		strings,
 	    //		pointers,
 	    //		_notify_of_newusers.pass_ptr(channel));
 		std::thread thr(thread_run,
-				_SERVER_NAME,
+				serverName,
 				CHANNEL,
 				channelTopic,
 				&_chan_newusers_map,
@@ -224,7 +225,8 @@ void Server::run(int listen_port)
 		// create a new server in the database if one does not exist.
 		// regardless, insert a serverMetaData instance
 		// **********************************
-		chitter::handleServer(_SERVER_NAME, acceptor.local_endpoint(), _connection);
+		chitter::handleServer(_serverConfig.defaultName,
+				acceptor.local_endpoint(), _connection);
 
 		// **********************************
 		// the main loop of the program
