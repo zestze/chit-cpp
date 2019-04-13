@@ -3,8 +3,14 @@ language: cpp
 dist: xenial
 compiler: 
     - clang
+addons:
+    apt:
+        sources:
+            - ubuntu-toolchain-r-test
+        packages:
+            - clang++-6.0
 install:
-    - "[ $CXX = clang++ ] && export CXX=clang++-7 || true"
+    - "[ $CXX = clang++ ] && export CXX=clang++-6.0 || true"
 # Install conan
     - pip install conan --user
 # Automatic detection of your arch, compiler, etc.
