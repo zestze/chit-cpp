@@ -23,3 +23,5 @@ script:
     - cmake .. -G "Unix Makefiles"
     - make
 # Run your tests
+    - cd test
+    - cd sockio && ./sockioTest
