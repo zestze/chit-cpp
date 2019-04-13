@@ -17,8 +17,7 @@ install:
     - conan user
 script:
 # Download dependencies and build project
-    - mkdir .conan && cd .conan && conan install .. -s compiler=clang \
-      -s compiler.version=6 -s compiler.libcxx=libstdc++11 --build=missing && cd ..
+    - mkdir .conan && cd .conan && conan install .. -s compiler=clang -s compiler.version=6.0 -s compiler.libcxx=libstdc++11 --build=missing && cd ..
 # Call your build system
     - mkdir cmake-build && cd cmake-build
     - cmake .. -G "Unix makefiles"
