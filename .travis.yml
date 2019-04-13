@@ -8,9 +8,9 @@ addons:
         sources:
             - ubuntu-toolchain-r-test
         packages:
-            - clang++-7
+            - clang++-6.0
 install:
-    - "[ $CXX = clang++ ] && export CXX=clang++-7 || true"
+    - "[ $CXX = clang++ ] && export CXX=clang++-6.0 || true"
 # Install conan
     - pip install conan
 # Automatic detection of your arch, compiler, etc.
