@@ -1,0 +1,24 @@
+sudo: false
+language: cpp
+compiler: 
+    - clang
+addons:
+    apt:
+        sources:
+            - ubuntu-toolchain-r-test
+        packages:
+            - clang++-7
+install:
+    - "[ $CXX = clang++ ] && export CXX=clang++-7 || true"
+# Install conan
+    - pip install conan
+# Automatic detection of your arch, compiler, etc.
+    - conan user
+script:
+# Download dependencies and build project
+    - mkdir .conan && cd .conan && conan install .. && cd ..
+# Call your build system
+    - mkdir cmake-build && cd cmake-build
+    - cmake .. -G "Unix makefiles"
+    - make
+# Run your tests
