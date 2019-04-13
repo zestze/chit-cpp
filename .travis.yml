@@ -11,7 +11,7 @@ install:
     - conan user
 script:
 # Download dependencies and build project
-    - mkdir .conan && cd .conan && conan install .. && cd ..
+    - mkdir .conan && cd .conan && conan install ..  --build=missing && cd ..
 # Call your build system
     - mkdir cmake-build && cd cmake-build
     - cmake .. -G "Unix makefiles"
