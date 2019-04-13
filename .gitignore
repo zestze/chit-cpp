@@ -1,6 +1,7 @@
 *.swp*
 *.o
 *.a
-*config*
+*config.*
+*config
 .conan
 chit-build
