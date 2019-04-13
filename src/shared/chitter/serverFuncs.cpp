@@ -63,13 +63,14 @@ namespace chitter {
         const pqxx::result RESULT = work.exec(ss.str());
         work.commit();
 
-        return {getStatusEnum(RESULT[0][0].as<std::string>()),
-            RESULT[0][1].as<std::string>()};
+        return std::make_tuple(
+            getStatusEnum(RESULT[0][0].as<std::string>()),
+            RESULT[0][1].as<std::string>());
     }
 
     void insertServerRoles(const std::string userID, const std::string serverName,
                                     const Status statusEnum, 
-                                    std::optional<std::string> displayName,
+                                    optional<std::string> displayName,
                                     pqxx::connection &connection) {
         pqxx::work work(connection);
         if (!displayName) {

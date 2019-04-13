@@ -11,6 +11,7 @@
 #include <utility>
 #include <ircConstants.h>
 #include <openssl/sha.h>
+#include <stdlib.h>
 
 // ************ GLOBALS ****************
 std::atomic<bool> selfdestruct;
@@ -36,11 +37,12 @@ void Server::try_writing(tcp::socket& sock, std::string msg)
 
 std::tuple<bool, std::string> Server::hashPassword(std::string password)
 {
+    unsigned char md[SHA256_DIGEST_LENGTH] = ""; // zero initialize
+
     SHA256_CTX context;
-    std::basic_string<unsigned char> md (SHA256_DIGEST_LENGTH, '0');
-    const bool success = SHA256_Init(&context) && 
+    const bool success = SHA256_Init(&context) &&
         SHA256_Update(&context, password.data(), password.length()) &&
-        SHA256_Final(md.data(), &context);
+        SHA256_Final(md, &context);
 
     // this will cause issues across different architectures / implementations
     // since the diff between unsigned char and char can vary
@@ -51,9 +53,9 @@ std::tuple<bool, std::string> Server::hashPassword(std::string password)
         return c;
     };
     std::string hash (SHA256_DIGEST_LENGTH, '0');
-    std::transform(md.begin(), md.end(), hash.begin(), convertChar);
+    std::transform(std::begin(md), std::end(md), hash.begin(), convertChar);
 
-    return {success, hash};
+    return std::make_tuple(success, hash);
 }
 
 Server::UserSuccessPair Server::register_session(tcp::socket& sock)

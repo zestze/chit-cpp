@@ -1,0 +1,27 @@
+sudo: false
+language: cpp
+dist: xenial
+compiler: 
+    - clang
+addons:
+    apt:
+        sources:
+            - ubuntu-toolchain-r-test
+        packages:
+            - clang++-6.0
+install:
+    - "[ $CXX = clang++ ] && export CXX=clang++-6.0 || true"
+# Install conan
+    - pip install conan --user
+# Automatic detection of your arch, compiler, etc.
+    - conan user
+script:
+# Download dependencies and build project
+    - mkdir .conan && cd .conan && conan install .. -s compiler=clang -s compiler.version=6.0 -s compiler.libcxx=libstdc++11 --build=missing && cd ..
+# Call your build system
+    - mkdir cmake-build && cd cmake-build
+    - cmake .. -G "Unix Makefiles"
+    - make
+# Run your tests
+    - cd test
+    - cd sockio && ./sockioTest

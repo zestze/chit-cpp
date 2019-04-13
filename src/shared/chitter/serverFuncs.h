@@ -8,8 +8,19 @@
 #include <pqxx/pqxx>
 #include <asio.hpp>
 #include <string>
-#include <optional>
 #include <status.h>
+
+
+// protect against compilers that only have experimental support of optional
+#ifdef __cpp_lib_optional
+#include <optional>
+template<class T>
+using optional = std::optional<T>;
+#elif  __cpp_lib_experimental_optional
+template<class T>
+using optional = std::experimental::optional<T>;
+#include <experimental/optional>
+#endif
 
 namespace chitter {
     using tcp = asio::ip::tcp;
@@ -28,7 +39,7 @@ namespace chitter {
             const std::string serverName, pqxx::connection& connection);
 
     void insertServerRoles(const std::string userID, const std::string serverName, 
-            const Status statusEnum, std::optional<std::string> displayName, 
+            const Status statusEnum, optional<std::string> displayName,
             pqxx::connection& connection);
 
 }
