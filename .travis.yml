@@ -13,15 +13,18 @@ install:
     - "[ $CXX = clang++ ] && export CXX=clang++-6.0 || true"
 # Install conan
     - pip install conan --user
-# Automatic detection of your arch, compiler, etc.
+# Automatic detection of arch, compiler, etc.
     - conan user
 script:
-# Download dependencies and build project
-    - mkdir .conan && cd .conan && conan install .. -s compiler=clang -s compiler.version=6.0 -s compiler.libcxx=libstdc++11 --build=missing && cd ..
-# Call your build system
+# Download dependencies 
+    - mkdir .conan && pushd .conan && conan install .. -s compiler=clang -s compiler.version=6.0 -s compiler.libcxx=libstdc++11 --build=missing && popd
+# Build Project
     - mkdir cmake-build && cd cmake-build
     - cmake .. -G "Unix Makefiles"
     - make
 # Run your tests
     - cd test
-    - cd sockio && ./sockioTest
+    - pushd sockio
+    - ./sockioTest
+    - valgrind --leak-check=full ./sockioTest
+    - popd
