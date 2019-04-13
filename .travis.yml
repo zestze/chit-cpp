@@ -9,6 +9,7 @@ addons:
             - ubuntu-toolchain-r-test
         packages:
             - clang++-6.0
+            - valgrind
 install:
     - "[ $CXX = clang++ ] && export CXX=clang++-6.0 || true"
 # Install conan
