@@ -110,7 +110,7 @@ namespace chitter {
 
     inline void insertServerRoles(const std::string userID, const std::string serverName,
                            const Status statusEnum, 
-                           std::optional<std::string> displayName) {
+                           optional<std::string> displayName) {
         pqxx::connection connection = initiate();
         insertServerRoles(userID, serverName, statusEnum, displayName, connection);
     }
